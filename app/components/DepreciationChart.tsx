@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ScatterChart,
   Scatter,
@@ -63,11 +63,62 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderLegend(hiddenModels: Set<string>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (props: any) => {
+    const { payload } = props;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {payload?.map((entry: any, index: number) => {
+          const isHidden = hiddenModels.has(entry.value);
+          return (
+            <span
+              key={`legend-${index}`}
+              style={{
+                cursor: "pointer",
+                opacity: isHidden ? 0.35 : 1,
+                textDecoration: isHidden ? "line-through" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                userSelect: "none",
+              }}
+            >
+              <svg width={10} height={10}>
+                <circle cx={5} cy={5} r={5} fill={entry.color} />
+              </svg>
+              <span style={{ color: "var(--muted)", fontSize: 14 }}>{entry.value}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+}
+
 const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
 const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
 
 export default function DepreciationChart({ scatter, medians, predictionCurves }: Props) {
   const [fuelFilter, setFuelFilter] = useState<string>("Alla");
+  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+
+  const handleLegendClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e: any) => {
+      const model = e.value || e.dataKey;
+      if (!model) return;
+      setHiddenModels((prev) => {
+        const next = new Set(prev);
+        if (next.has(model)) next.delete(model);
+        else next.add(model);
+        return next;
+      });
+    },
+    []
+  );
 
   const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
 
@@ -120,6 +171,8 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
     modelsWithCurve.push(...models);
   }
 
+  const visibleModelsWithCurve = modelsWithCurve.filter((m) => !hiddenModels.has(m));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -149,11 +202,15 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
             tick={{ fill: "var(--muted)", fontSize: 12 }}
             tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} domain={[0, "auto"]} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" height={36} />
+          <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
           {Object.entries(filteredScatter).map(([model, points]) => (
-            points.length > 0 && (
+            points.length > 0 && !hiddenModels.has(model) && (
               <Scatter key={model} name={model} data={points} fill={COLORS[model]} opacity={0.6} r={4} />
             )
+          ))}
+          {/* Invisible scatters for hidden models so they still appear in the legend */}
+          {Object.keys(filteredScatter).filter((m) => hiddenModels.has(m)).map((model) => (
+            <Scatter key={model} name={model} data={[]} fill={COLORS[model]} opacity={0.6} r={4} />
           ))}
         </ScatterChart>
       </ResponsiveContainer>
@@ -176,14 +233,16 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
               }}
               labelFormatter={(label: any) => `Ålder: ${label} år`}
             />
-            <Legend verticalAlign="top" height={36} />
+            <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
             {hasPredictions && modelsWithCurve.map((model) => (
               <Area key={`${model}_band`} dataKey={`${model}_range`} stroke="none"
-                fill={COLORS[model]} fillOpacity={0.1} connectNulls type="monotone" legendType="none" />
+                fill={COLORS[model]} fillOpacity={hiddenModels.has(model) ? 0 : 0.1}
+                connectNulls type="monotone" legendType="none" />
             ))}
             {modelsWithCurve.map((model) => (
               <Line key={model} type="monotone" dataKey={model} stroke={COLORS[model]}
-                strokeWidth={3} dot={{ r: 4, fill: COLORS[model] }} connectNulls />
+                strokeWidth={3} dot={{ r: 4, fill: COLORS[model] }} connectNulls
+                hide={hiddenModels.has(model)} />
             ))}
           </ComposedChart>
         </ResponsiveContainer>
@@ -194,7 +253,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
         </div>
       )}
 
-      {hasPredictions && modelsWithCurve.length > 0 && (
+      {hasPredictions && visibleModelsWithCurve.length > 0 && (
         <p className="text-xs text-[var(--muted)] text-center">
           Skuggade band visar 95% prediktionsintervall från multivariat regression
           (justerat för bränsletyp, miltal, hk, utrustning, drivlina)

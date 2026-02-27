@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import {
   Line,
   Area,
@@ -27,8 +28,59 @@ interface Props {
   predictionCurves?: Record<string, Record<string, PredictionPoint[]>>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderLegend(hiddenModels: Set<string>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (props: any) => {
+    const { payload } = props;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {payload?.map((entry: any, index: number) => {
+          const isHidden = hiddenModels.has(entry.value);
+          return (
+            <span
+              key={`legend-${index}`}
+              style={{
+                cursor: "pointer",
+                opacity: isHidden ? 0.35 : 1,
+                textDecoration: isHidden ? "line-through" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                userSelect: "none",
+              }}
+            >
+              <svg width={10} height={10}>
+                <circle cx={5} cy={5} r={5} fill={entry.color} />
+              </svg>
+              <span style={{ color: "var(--muted)", fontSize: 14 }}>{entry.value}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+}
+
 export default function RetentionChart({ retention, predictionCurves }: Props) {
+  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
   const hasPredictions = predictionCurves && Object.keys(predictionCurves).length > 0;
+
+  const handleLegendClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e: any) => {
+      const model = e.value || e.dataKey;
+      if (!model) return;
+      setHiddenModels((prev) => {
+        const next = new Set(prev);
+        if (next.has(model)) next.delete(model);
+        else next.add(model);
+        return next;
+      });
+    },
+    []
+  );
 
   const allAges = new Set<number>();
   Object.values(retention).forEach((r) => r.points.forEach((p) => allAges.add(p.age)));
@@ -53,6 +105,8 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
     return point;
   });
 
+  const models = Object.keys(retention);
+
   return (
     <ResponsiveContainer width="100%" height={450}>
       <ComposedChart data={data} margin={{ top: 10, right: 20, bottom: 40, left: 20 }}>
@@ -71,16 +125,18 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
           }}
           labelFormatter={(label: any) => `Ålder: ${label} år`}
         />
-        <Legend verticalAlign="top" height={36} />
+        <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
         <ReferenceLine y={50} stroke="var(--muted)" strokeDasharray="6 4"
           label={{ value: "50%", fill: "var(--muted)", position: "right" }} />
-        {hasPredictions && Object.keys(retention).map((model) => (
+        {hasPredictions && models.map((model) => (
           <Area key={`${model}_band`} dataKey={`${model}_range`} stroke="none"
-            fill={COLORS[model]} fillOpacity={0.1} connectNulls type="monotone" legendType="none" />
+            fill={COLORS[model]} fillOpacity={hiddenModels.has(model) ? 0 : 0.1}
+            connectNulls type="monotone" legendType="none" />
         ))}
-        {Object.keys(retention).map((model) => (
+        {models.map((model) => (
           <Line key={model} type="monotone" dataKey={model} stroke={COLORS[model]}
-            strokeWidth={3} dot={{ r: 5, fill: COLORS[model] }} connectNulls />
+            strokeWidth={3} dot={{ r: 5, fill: COLORS[model] }} connectNulls
+            hide={hiddenModels.has(model)} />
         ))}
       </ComposedChart>
     </ResponsiveContainer>

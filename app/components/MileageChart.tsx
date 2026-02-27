@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   ComposedChart,
   Scatter,
@@ -38,7 +38,59 @@ function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
     .sort((a, b) => a.mileage - b.mileage);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderLegend(hiddenModels: Set<string>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (props: any) => {
+    const { payload } = props;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {payload?.map((entry: any, index: number) => {
+          const isHidden = hiddenModels.has(entry.value);
+          return (
+            <span
+              key={`legend-${index}`}
+              style={{
+                cursor: "pointer",
+                opacity: isHidden ? 0.35 : 1,
+                textDecoration: isHidden ? "line-through" : "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                userSelect: "none",
+              }}
+            >
+              <svg width={10} height={10}>
+                <circle cx={5} cy={5} r={5} fill={entry.color} />
+              </svg>
+              <span style={{ color: "var(--muted)", fontSize: 14 }}>{entry.value}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+}
+
 export default function MileageChart({ data }: Props) {
+  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+
+  const handleLegendClick = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (e: any) => {
+      const model = e.value || e.dataKey;
+      if (!model) return;
+      setHiddenModels((prev) => {
+        const next = new Set(prev);
+        if (next.has(model)) next.delete(model);
+        else next.add(model);
+        return next;
+      });
+    },
+    []
+  );
+
   const trendLines = useMemo(() => {
     const result: Record<string, { mileage: number; median: number }[]> = {};
     for (const [model, points] of Object.entries(data)) result[model] = computeTrendLine(points);
@@ -58,6 +110,8 @@ export default function MileageChart({ data }: Props) {
     });
   }, [trendLines]);
 
+  const models = Object.keys(data);
+
   return (
     <ResponsiveContainer width="100%" height={450}>
       <ComposedChart data={trendData} margin={{ top: 10, right: 20, bottom: 40, left: 20 }}>
@@ -74,14 +128,18 @@ export default function MileageChart({ data }: Props) {
           formatter={(value: any, name: any) => [`${Number(value || 0).toLocaleString("sv-SE")} kr`, name]}
           labelFormatter={(label: any) => `${Number(label).toLocaleString("sv-SE")} mil`}
         />
-        <Legend verticalAlign="top" height={36} />
-        {Object.entries(data).map(([model, points]) => (
-          <Scatter key={model} name={model} data={points} dataKey="price"
-            fill={COLORS[model]} opacity={0.5} r={3} legendType="circle" />
+        <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
+        {models.map((model) => (
+          hiddenModels.has(model)
+            ? <Scatter key={model} name={model} data={[]} dataKey="price"
+                fill={COLORS[model]} opacity={0.5} r={3} legendType="circle" />
+            : <Scatter key={model} name={model} data={data[model]} dataKey="price"
+                fill={COLORS[model]} opacity={0.5} r={3} legendType="circle" />
         ))}
         {Object.keys(trendLines).map((model) => (
           <Line key={`${model}_trend`} type="monotone" dataKey={model} stroke={COLORS[model]}
-            strokeWidth={3} dot={false} connectNulls legendType="none" />
+            strokeWidth={3} dot={false} connectNulls legendType="none"
+            hide={hiddenModels.has(model)} />
         ))}
       </ComposedChart>
     </ResponsiveContainer>
