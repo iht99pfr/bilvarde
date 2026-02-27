@@ -1,24 +1,9 @@
-import { promises as fs } from "fs";
-import path from "path";
-import StatsCards from "./components/StatsCards";
-import StatsBadges from "./components/StatsBadges";
+import StatsSection from "./components/StatsSection";
 import ChartSection from "./components/ChartSection";
-import TcoCalculator from "./components/TcoCalculator";
-import DataTable from "./components/DataTable";
+import TcoSection from "./components/TcoSection";
+import DataTableSection from "./components/DataTableSection";
 
-async function loadJSON(filename: string) {
-  const filePath = path.join(process.cwd(), "public", "data", filename);
-  const raw = await fs.readFile(filePath, "utf-8");
-  return JSON.parse(raw);
-}
-
-export default async function Home() {
-  const [aggregates, scatter, cars] = await Promise.all([
-    loadJSON("aggregates.json"),
-    loadJSON("scatter.json"),
-    loadJSON("cars.json"),
-  ]);
-
+export default function Home() {
   return (
     <div className="space-y-12">
       {/* Hero */}
@@ -27,31 +12,17 @@ export default async function Home() {
           Hela Notan — vad kostar bilen egentligen?
         </h1>
         <p className="text-[var(--muted)] mt-3 max-w-2xl mx-auto">
-          Riktig data från {cars.length} annonser på Blocket.se.
+          Riktig data från Blocket.se.
           Jämför hur Toyota RAV4, Volvo XC60 och BMW X3 tappar i värde
           över tid, miltal och bränsletyp.
         </p>
       </section>
 
-      {/* Summary stats */}
-      <section>
-        <StatsCards summary={aggregates.summary} />
-      </section>
-
-      {/* Model accuracy */}
-      <section className="space-y-3">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">Modellprecision</h2>
-          <p className="text-[var(--muted)] text-sm mt-1">
-            Multivariat regression som tar hänsyn till ålder, miltal, bränsletyp,
-            hästkrafter, utrustning, drivlina och säljartyp.
-          </p>
-        </div>
-        <StatsBadges regression={aggregates.regression} />
-      </section>
+      {/* Summary stats + model accuracy */}
+      <StatsSection />
 
       {/* Charts — shared legend filter state */}
-      <ChartSection scatter={scatter} aggregates={aggregates} />
+      <ChartSection />
 
       {/* TCO Calculator */}
       <section id="tco" className="space-y-4">
@@ -59,14 +30,10 @@ export default async function Home() {
           <h2 className="text-2xl font-bold text-[var(--foreground)]">Ägandekostnadsberäknare</h2>
           <p className="text-[var(--muted)] text-sm mt-1">
             Jämför den totala ägandekostnaden för två olika bilar. Prediktioner
-            beräknas i realtid med vår regressionsmodell tränad
-            på {cars.length} verkliga annonser.
+            beräknas i realtid med vår regressionsmodell tränad på verkliga annonser.
           </p>
         </div>
-        <TcoCalculator
-          regression={aggregates.regression}
-          tcoDefaults={aggregates.tcoDefaults}
-        />
+        <TcoSection />
       </section>
 
       {/* Key Insights */}
@@ -111,19 +78,18 @@ export default async function Home() {
         <div>
           <h2 className="text-2xl font-bold text-[var(--foreground)]">Alla bilar</h2>
           <p className="text-[var(--muted)] text-sm mt-1">
-            Bläddra bland alla {cars.length} insamlade annonser. Sortera på valfri
+            Bläddra bland alla insamlade annonser. Sortera på valfri
             kolumn eller filtrera på modell och bränsletyp.
           </p>
         </div>
-        <DataTable cars={cars} />
+        <DataTableSection />
       </section>
 
       {/* Methodology */}
       <section className="bg-[var(--card)] p-6 border border-[var(--border)] text-sm text-[var(--muted)] space-y-2">
         <h3 className="text-[var(--foreground)] font-semibold">Metod</h3>
         <p>
-          Data insamlades från Blocket.se i februari 2026. Vi samlade in ca 100
-          annonser vardera för Toyota RAV4, Volvo XC60 och BMW X3. Annonser
+          Data insamlades från Blocket.se i februari 2026. Annonser
           med priser under 20 000 kr eller årsmodeller före 2005 exkluderades.
         </p>
         <p>

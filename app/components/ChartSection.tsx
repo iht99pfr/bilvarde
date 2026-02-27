@@ -1,19 +1,26 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DepreciationChart from "./DepreciationChart";
 import RetentionChart from "./RetentionChart";
 import MileageChart from "./MileageChart";
 
-interface Props {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  scatter: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  aggregates: any;
-}
-
-export default function ChartSection({ scatter, aggregates }: Props) {
+export default function ChartSection() {
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [aggregates, setAggregates] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [scatter, setScatter] = useState<any>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/aggregates").then((r) => r.json()),
+      fetch("/api/scatter").then((r) => r.json()),
+    ]).then(([agg, scat]) => {
+      setAggregates(agg);
+      setScatter(scat);
+    });
+  }, []);
 
   const toggleModel = useCallback((model: string) => {
     setHiddenModels((prev) => {
@@ -23,6 +30,19 @@ export default function ChartSection({ scatter, aggregates }: Props) {
       return next;
     });
   }, []);
+
+  if (!aggregates || !scatter) {
+    return (
+      <div className="space-y-8">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="space-y-4">
+            <div className="animate-pulse h-6 bg-[var(--border)] rounded w-1/4" />
+            <div className="animate-pulse h-[400px] bg-[var(--border)] rounded" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
