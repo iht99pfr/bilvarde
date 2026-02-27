@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo } from "react";
 import {
   ComposedChart,
   Scatter,
@@ -20,7 +20,11 @@ const COLORS: Record<string, string> = {
 };
 
 interface MileagePoint { mileage: number; price: number; }
-interface Props { data: Record<string, MileagePoint[]>; }
+interface Props {
+  data: Record<string, MileagePoint[]>;
+  hiddenModels: Set<string>;
+  onToggleModel: (model: string) => void;
+}
 
 function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
   const buckets: Record<number, number[]> = {};
@@ -42,11 +46,18 @@ function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
 function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
-    const { payload } = props;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const seen = new Set<string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (props.payload || []).filter((e: any) => {
+      if (String(e.value).includes("_range") || seen.has(e.value)) return false;
+      seen.add(e.value);
+      return true;
+    });
     return (
       <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {payload?.map((entry: any, index: number) => {
+        {items.map((entry: any, index: number) => {
           const isHidden = hiddenModels.has(entry.value);
           return (
             <span
@@ -74,20 +85,7 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function MileageChart({ data }: Props) {
-  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
-
-  const toggleModel = useCallback(
-    (model: string) => {
-      setHiddenModels((prev) => {
-        const next = new Set(prev);
-        if (next.has(model)) next.delete(model);
-        else next.add(model);
-        return next;
-      });
-    },
-    []
-  );
+export default function MileageChart({ data, hiddenModels, onToggleModel }: Props) {
 
   const trendLines = useMemo(() => {
     const result: Record<string, { mileage: number; median: number }[]> = {};
@@ -126,7 +124,7 @@ export default function MileageChart({ data }: Props) {
           formatter={(value: any, name: any) => [`${Number(value || 0).toLocaleString("sv-SE")} kr`, name]}
           labelFormatter={(label: any) => `${Number(label).toLocaleString("sv-SE")} mil`}
         />
-        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
+        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, onToggleModel)} />
         {models.map((model) => (
           hiddenModels.has(model)
             ? <Scatter key={model} name={model} data={[]} dataKey="price"

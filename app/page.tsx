@@ -2,9 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import StatsCards from "./components/StatsCards";
 import StatsBadges from "./components/StatsBadges";
-import DepreciationChart from "./components/DepreciationChart";
-import RetentionChart from "./components/RetentionChart";
-import MileageChart from "./components/MileageChart";
+import ChartSection from "./components/ChartSection";
 import TcoCalculator from "./components/TcoCalculator";
 import DataTable from "./components/DataTable";
 
@@ -52,47 +50,8 @@ export default async function Home() {
         <StatsBadges regression={aggregates.regression} />
       </section>
 
-      {/* Depreciation by Age */}
-      <section id="depreciation" className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">Pris per ålder</h2>
-          <p className="text-[var(--muted)] text-sm mt-1">
-            Varje punkt är en verklig annons. Trendlinjer visar predikterat pris
-            med 95% konfidensband. Filtrera på bränsletyp för att jämföra.
-          </p>
-        </div>
-        <DepreciationChart
-          scatter={scatter}
-          medians={aggregates.priceByAge}
-          predictionCurves={aggregates.predictionCurves}
-        />
-      </section>
-
-      {/* Value Retention */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">Restvärde</h2>
-          <p className="text-[var(--muted)] text-sm mt-1">
-            Andel av nypriset som behålls vid varje ålder.
-            Skuggade band visar 95% prediktionsosäkerhet.
-          </p>
-        </div>
-        <RetentionChart
-          retention={aggregates.retention}
-          predictionCurves={aggregates.predictionCurves}
-        />
-      </section>
-
-      {/* Mileage Impact */}
-      <section id="mileage" className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">Miltalseffekt</h2>
-          <p className="text-[var(--muted)] text-sm mt-1">
-            Hur miltal korrelerar med begärt pris för respektive modell.
-          </p>
-        </div>
-        <MileageChart data={aggregates.mileageCost} />
-      </section>
+      {/* Charts — shared legend filter state */}
+      <ChartSection scatter={scatter} aggregates={aggregates} />
 
       {/* TCO Calculator */}
       <section id="tco" className="space-y-4">

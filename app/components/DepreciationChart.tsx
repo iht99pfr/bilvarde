@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   ScatterChart,
   Scatter,
@@ -48,6 +48,8 @@ interface Props {
   scatter: Record<string, ScatterPoint[]>;
   medians: Record<string, MedianPoint[]>;
   predictionCurves?: Record<string, Record<string, PredictionPoint[]>>;
+  hiddenModels: Set<string>;
+  onToggleModel: (model: string) => void;
 }
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterPoint }> }) {
@@ -67,11 +69,18 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
-    const { payload } = props;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const seen = new Set<string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (props.payload || []).filter((e: any) => {
+      if (String(e.value).includes("_range") || seen.has(e.value)) return false;
+      seen.add(e.value);
+      return true;
+    });
     return (
       <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {payload?.map((entry: any, index: number) => {
+        {items.map((entry: any, index: number) => {
           const isHidden = hiddenModels.has(entry.value);
           return (
             <span
@@ -102,21 +111,8 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
 const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
 const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
 
-export default function DepreciationChart({ scatter, medians, predictionCurves }: Props) {
+export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel }: Props) {
   const [fuelFilter, setFuelFilter] = useState<string>("Alla");
-  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
-
-  const toggleModel = useCallback(
-    (model: string) => {
-      setHiddenModels((prev) => {
-        const next = new Set(prev);
-        if (next.has(model)) next.delete(model);
-        else next.add(model);
-        return next;
-      });
-    },
-    []
-  );
 
   const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
 
@@ -200,7 +196,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
             tick={{ fill: "var(--muted)", fontSize: 12 }}
             tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} domain={[0, "auto"]} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
+          <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, onToggleModel)} />
           {Object.entries(filteredScatter).map(([model, points]) => (
             points.length > 0 && !hiddenModels.has(model) && (
               <Scatter key={model} name={model} data={points} fill={COLORS[model]} opacity={0.6} r={4} />
@@ -231,7 +227,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
               }}
               labelFormatter={(label: any) => `Ålder: ${label} år`}
             />
-            <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
+            <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, onToggleModel)} />
             {hasPredictions && modelsWithCurve.map((model) => (
               <Area key={`${model}_band`} dataKey={`${model}_range`} stroke="none"
                 fill={COLORS[model]} fillOpacity={hiddenModels.has(model) ? 0 : 0.1}

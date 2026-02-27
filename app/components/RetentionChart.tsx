@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import React from "react";
 import {
   Line,
   Area,
@@ -26,17 +26,26 @@ interface PredictionPoint { age: number; predicted: number; lower: number; upper
 interface Props {
   retention: Record<string, { newPrice: number; points: RetentionPoint[] }>;
   predictionCurves?: Record<string, Record<string, PredictionPoint[]>>;
+  hiddenModels: Set<string>;
+  onToggleModel: (model: string) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
-    const { payload } = props;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const seen = new Set<string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (props.payload || []).filter((e: any) => {
+      if (String(e.value).includes("_range") || seen.has(e.value)) return false;
+      seen.add(e.value);
+      return true;
+    });
     return (
       <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {payload?.map((entry: any, index: number) => {
+        {items.map((entry: any, index: number) => {
           const isHidden = hiddenModels.has(entry.value);
           return (
             <span
@@ -64,21 +73,8 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function RetentionChart({ retention, predictionCurves }: Props) {
-  const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+export default function RetentionChart({ retention, predictionCurves, hiddenModels, onToggleModel }: Props) {
   const hasPredictions = predictionCurves && Object.keys(predictionCurves).length > 0;
-
-  const toggleModel = useCallback(
-    (model: string) => {
-      setHiddenModels((prev) => {
-        const next = new Set(prev);
-        if (next.has(model)) next.delete(model);
-        else next.add(model);
-        return next;
-      });
-    },
-    []
-  );
 
   const allAges = new Set<number>();
   Object.values(retention).forEach((r) => r.points.forEach((p) => allAges.add(p.age)));
@@ -123,7 +119,7 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
           }}
           labelFormatter={(label: any) => `Ålder: ${label} år`}
         />
-        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
+        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, onToggleModel)} />
         <ReferenceLine y={50} stroke="var(--muted)" strokeDasharray="6 4"
           label={{ value: "50%", fill: "var(--muted)", position: "right" }} />
         {hasPredictions && models.map((model) => (
