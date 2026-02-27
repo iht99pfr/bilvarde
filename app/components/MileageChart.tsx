@@ -39,7 +39,7 @@ function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderLegend(hiddenModels: Set<string>) {
+function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const { payload } = props;
@@ -51,6 +51,7 @@ function renderLegend(hiddenModels: Set<string>) {
           return (
             <span
               key={`legend-${index}`}
+              onClick={() => onToggle(entry.value)}
               style={{
                 cursor: "pointer",
                 opacity: isHidden ? 0.35 : 1,
@@ -76,11 +77,8 @@ function renderLegend(hiddenModels: Set<string>) {
 export default function MileageChart({ data }: Props) {
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
 
-  const handleLegendClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e: any) => {
-      const model = e.value || e.dataKey;
-      if (!model) return;
+  const toggleModel = useCallback(
+    (model: string) => {
       setHiddenModels((prev) => {
         const next = new Set(prev);
         if (next.has(model)) next.delete(model);
@@ -128,7 +126,7 @@ export default function MileageChart({ data }: Props) {
           formatter={(value: any, name: any) => [`${Number(value || 0).toLocaleString("sv-SE")} kr`, name]}
           labelFormatter={(label: any) => `${Number(label).toLocaleString("sv-SE")} mil`}
         />
-        <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
+        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
         {models.map((model) => (
           hiddenModels.has(model)
             ? <Scatter key={model} name={model} data={[]} dataKey="price"

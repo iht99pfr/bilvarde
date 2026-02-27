@@ -64,7 +64,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderLegend(hiddenModels: Set<string>) {
+function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const { payload } = props;
@@ -76,6 +76,7 @@ function renderLegend(hiddenModels: Set<string>) {
           return (
             <span
               key={`legend-${index}`}
+              onClick={() => onToggle(entry.value)}
               style={{
                 cursor: "pointer",
                 opacity: isHidden ? 0.35 : 1,
@@ -105,11 +106,8 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
   const [fuelFilter, setFuelFilter] = useState<string>("Alla");
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
 
-  const handleLegendClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e: any) => {
-      const model = e.value || e.dataKey;
-      if (!model) return;
+  const toggleModel = useCallback(
+    (model: string) => {
       setHiddenModels((prev) => {
         const next = new Set(prev);
         if (next.has(model)) next.delete(model);
@@ -202,7 +200,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
             tick={{ fill: "var(--muted)", fontSize: 12 }}
             tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} domain={[0, "auto"]} />
           <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
+          <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
           {Object.entries(filteredScatter).map(([model, points]) => (
             points.length > 0 && !hiddenModels.has(model) && (
               <Scatter key={model} name={model} data={points} fill={COLORS[model]} opacity={0.6} r={4} />
@@ -233,7 +231,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves }
               }}
               labelFormatter={(label: any) => `Ålder: ${label} år`}
             />
-            <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
+            <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
             {hasPredictions && modelsWithCurve.map((model) => (
               <Area key={`${model}_band`} dataKey={`${model}_range`} stroke="none"
                 fill={COLORS[model]} fillOpacity={hiddenModels.has(model) ? 0 : 0.1}

@@ -29,7 +29,7 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function renderLegend(hiddenModels: Set<string>) {
+function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => void) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const { payload } = props;
@@ -41,6 +41,7 @@ function renderLegend(hiddenModels: Set<string>) {
           return (
             <span
               key={`legend-${index}`}
+              onClick={() => onToggle(entry.value)}
               style={{
                 cursor: "pointer",
                 opacity: isHidden ? 0.35 : 1,
@@ -67,11 +68,8 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
   const hasPredictions = predictionCurves && Object.keys(predictionCurves).length > 0;
 
-  const handleLegendClick = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (e: any) => {
-      const model = e.value || e.dataKey;
-      if (!model) return;
+  const toggleModel = useCallback(
+    (model: string) => {
       setHiddenModels((prev) => {
         const next = new Set(prev);
         if (next.has(model)) next.delete(model);
@@ -125,7 +123,7 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
           }}
           labelFormatter={(label: any) => `Ålder: ${label} år`}
         />
-        <Legend verticalAlign="top" height={36} onClick={handleLegendClick} content={renderLegend(hiddenModels)} />
+        <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, toggleModel)} />
         <ReferenceLine y={50} stroke="var(--muted)" strokeDasharray="6 4"
           label={{ value: "50%", fill: "var(--muted)", position: "right" }} />
         {hasPredictions && models.map((model) => (
