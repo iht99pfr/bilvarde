@@ -1,9 +1,11 @@
 import { promises as fs } from "fs";
 import path from "path";
 import StatsCards from "./components/StatsCards";
+import StatsBadges from "./components/StatsBadges";
 import DepreciationChart from "./components/DepreciationChart";
 import RetentionChart from "./components/RetentionChart";
 import MileageChart from "./components/MileageChart";
+import TcoCalculator from "./components/TcoCalculator";
 import DataTable from "./components/DataTable";
 
 async function loadJSON(filename: string) {
@@ -39,18 +41,31 @@ export default async function Home() {
         <StatsCards summary={aggregates.summary} />
       </section>
 
+      {/* Model accuracy */}
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-2xl font-bold">Model Accuracy</h2>
+          <p className="text-zinc-400 text-sm mt-1">
+            Multivariate regression accounting for age, mileage, fuel type, HP,
+            equipment, drivetrain, and seller type.
+          </p>
+        </div>
+        <StatsBadges regression={aggregates.regression} />
+      </section>
+
       {/* Depreciation by Age */}
       <section id="depreciation" className="space-y-4">
         <div>
           <h2 className="text-2xl font-bold">Price vs Age</h2>
           <p className="text-zinc-400 text-sm mt-1">
-            Each dot is a real listing. Trend lines show median price per age
-            year.
+            Each dot is a real listing. Trend lines show predicted price with
+            95% confidence bands. Filter by fuel type to compare.
           </p>
         </div>
         <DepreciationChart
           scatter={scatter}
           medians={aggregates.priceByAge}
+          predictionCurves={aggregates.predictionCurves}
         />
       </section>
 
@@ -60,10 +75,13 @@ export default async function Home() {
           <h2 className="text-2xl font-bold">Value Retention</h2>
           <p className="text-zinc-400 text-sm mt-1">
             Percentage of the &ldquo;new&rdquo; price retained at each age.
-            Based on median prices relative to 0–1 year old cars.
+            Shaded bands show 95% prediction uncertainty.
           </p>
         </div>
-        <RetentionChart retention={aggregates.retention} />
+        <RetentionChart
+          retention={aggregates.retention}
+          predictionCurves={aggregates.predictionCurves}
+        />
       </section>
 
       {/* Mileage Impact */}
@@ -75,6 +93,22 @@ export default async function Home() {
           </p>
         </div>
         <MileageChart data={aggregates.mileageCost} />
+      </section>
+
+      {/* TCO Calculator */}
+      <section id="tco" className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-bold">Ownership Cost Calculator</h2>
+          <p className="text-zinc-400 text-sm mt-1">
+            Compare the total cost of owning two different cars. Predictions
+            are computed client-side using our regression model trained
+            on {cars.length} real listings.
+          </p>
+        </div>
+        <TcoCalculator
+          regression={aggregates.regression}
+          tcoDefaults={aggregates.tcoDefaults}
+        />
       </section>
 
       {/* Key Insights */}
@@ -136,10 +170,16 @@ export default async function Home() {
           excluded.
         </p>
         <p>
-          Median prices are used for trend lines and retention calculations to
-          reduce the influence of outliers. &ldquo;New price&rdquo; for
-          retention is the median price of cars aged 0–1 years (or 0–2 if
-          insufficient data).
+          Depreciation is modelled using multivariate linear regression with 10
+          features: car age, mileage, horsepower, equipment count, fuel type
+          (Hybrid/PHEV/Diesel/Electric dummies), seller type, and drivetrain.
+          This accounts for the fact that different trims and fuel types have
+          different base prices.
+        </p>
+        <p>
+          95% prediction intervals use ±1.96 × residual standard error. The TCO
+          calculator uses these same regression coefficients client-side to
+          predict buy/sell prices for any configuration.
         </p>
       </section>
     </div>

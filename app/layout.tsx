@@ -45,6 +45,9 @@ export default function RootLayout({
               <a href="#mileage" className="hover:text-zinc-100 transition">
                 Mileage
               </a>
+              <a href="#tco" className="hover:text-zinc-100 transition">
+                TCO
+              </a>
               <a href="#factors" className="hover:text-zinc-100 transition">
                 Factors
               </a>
