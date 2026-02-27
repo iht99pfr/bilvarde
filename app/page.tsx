@@ -26,7 +26,7 @@ export default async function Home() {
       {/* Hero */}
       <section className="text-center py-8">
         <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)]">
-          Värdeminskningsguide för begagnade bilar
+          Hela Notan — vad kostar bilen egentligen?
         </h1>
         <p className="text-[var(--muted)] mt-3 max-w-2xl mx-auto">
           Riktig data från {cars.length} annonser på Blocket.se.

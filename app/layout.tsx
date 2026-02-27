@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bilvärde — Vad kostar det att äga en bil?",
+  title: "Hela Notan — Vad kostar det egentligen?",
   description:
-    "Jämför värdeminskning för Toyota RAV4, Volvo XC60 och BMW X3 baserat på riktiga Blocket-annonser.",
+    "Se hela kostnaden för att äga en bil. Jämför värdeminskning, försäkring, skatt och service för RAV4, XC60 och X3 baserat på riktiga Blocket-annonser.",
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
         <nav className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <a href="#" className="text-xl font-bold tracking-tight shrink-0 text-[var(--foreground)]">
-              Bilvärde
+              Hela Notan
             </a>
             <div className="flex gap-3 sm:gap-5 text-sm text-[var(--muted)] overflow-x-auto scrollbar-hide">
               <a href="#depreciation" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
@@ -56,7 +56,7 @@ export default function RootLayout({
         <footer className="border-t border-[var(--border)] px-6 py-8">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
             <div className="flex items-center gap-4">
-              <span className="font-semibold text-[var(--foreground)]">Bilvärde</span>
+              <span className="font-semibold text-[var(--foreground)]">Hela Notan</span>
               <span>Ett projekt av <a href="https://upnorth.ai" className="underline hover:text-[var(--foreground)] transition" target="_blank" rel="noopener noreferrer">Up North AI</a></span>
             </div>
             <div className="flex gap-4">
