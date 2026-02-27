@@ -44,6 +44,8 @@ export default function ChartSection() {
     );
   }
 
+  const modelConfig = aggregates.modelConfig || {};
+
   return (
     <>
       {/* Depreciation by Age */}
@@ -59,6 +61,7 @@ export default function ChartSection() {
           scatter={scatter}
           medians={aggregates.priceByAge}
           predictionCurves={aggregates.predictionCurves}
+          modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
         />
@@ -76,6 +79,7 @@ export default function ChartSection() {
         <RetentionChart
           retention={aggregates.retention}
           predictionCurves={aggregates.predictionCurves}
+          modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
         />
@@ -91,6 +95,7 @@ export default function ChartSection() {
         </div>
         <MileageChart
           data={aggregates.mileageCost}
+          modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
         />

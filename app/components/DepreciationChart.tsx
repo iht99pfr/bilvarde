@@ -14,12 +14,8 @@ import {
   Area,
   ComposedChart,
 } from "recharts";
-
-const COLORS: Record<string, string> = {
-  RAV4: "#dc2626",
-  XC60: "#2563eb",
-  X3: "#0ea5e9",
-};
+import { getColorsMap } from "@/app/lib/model-config";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface ScatterPoint {
   age: number;
@@ -50,6 +46,7 @@ interface Props {
   predictionCurves?: Record<string, Record<string, PredictionPoint[]>>;
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
+  modelConfig: ModelConfigMap;
 }
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterPoint }> }) {
@@ -111,7 +108,8 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
 const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
 const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
 
-export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel }: Props) {
+export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel, modelConfig }: Props) {
+  const COLORS = getColorsMap(modelConfig);
   const [fuelFilter, setFuelFilter] = useState<string>("Alla");
 
   const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;

@@ -21,6 +21,7 @@ export default function TcoSection() {
     <TcoCalculator
       regression={data.regression}
       tcoDefaults={data.tcoDefaults}
+      modelConfig={data.modelConfig || {}}
     />
   );
 }

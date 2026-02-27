@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface Car {
   id: string;
   url: string;
   make: string;
   model: string;
+  modelKey?: string;
   year: number;
   age: number;
   price: number;
@@ -21,6 +23,7 @@ interface Car {
 
 interface Props {
   cars: Car[];
+  modelConfig: ModelConfigMap;
 }
 
 type SortKey = "price" | "year" | "mileage" | "hp";
@@ -33,7 +36,7 @@ const FUEL_LABELS: Record<string, string> = {
   Electric: "El",
 };
 
-export default function DataTable({ cars }: Props) {
+export default function DataTable({ cars, modelConfig }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [filterModel, setFilterModel] = useState<string>("all");
@@ -42,12 +45,7 @@ export default function DataTable({ cars }: Props) {
   const filtered = useMemo(() => {
     let result = [...cars];
     if (filterModel !== "all") {
-      result = result.filter((c) => {
-        if (filterModel === "RAV4") return c.make === "Toyota";
-        if (filterModel === "XC60") return c.make === "Volvo";
-        if (filterModel === "X3") return c.make === "BMW";
-        return true;
-      });
+      result = result.filter((c) => c.modelKey === filterModel);
     }
     if (filterFuel !== "all") {
       result = result.filter((c) => c.fuel === filterFuel);
@@ -84,9 +82,9 @@ export default function DataTable({ cars }: Props) {
           className="bg-[var(--card)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
         >
           <option value="all">Alla modeller</option>
-          <option value="RAV4">Toyota RAV4</option>
-          <option value="XC60">Volvo XC60</option>
-          <option value="X3">BMW X3</option>
+          {Object.entries(modelConfig).map(([key, meta]) => (
+            <option key={key} value={key}>{meta.label}</option>
+          ))}
         </select>
         <select
           value={filterFuel}

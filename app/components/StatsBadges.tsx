@@ -1,5 +1,8 @@
 "use client";
 
+import { getModelMeta } from "@/app/lib/model-config";
+import type { ModelConfigMap } from "@/app/lib/model-config";
+
 interface RegressionStats {
   r2: number;
   rmse: number;
@@ -9,13 +12,8 @@ interface RegressionStats {
 
 interface Props {
   regression: Record<string, RegressionStats>;
+  modelConfig: ModelConfigMap;
 }
-
-const MODEL_META: Record<string, { label: string; border: string }> = {
-  RAV4: { label: "Toyota RAV4", border: "border-red-400" },
-  XC60: { label: "Volvo XC60", border: "border-blue-400" },
-  X3: { label: "BMW X3", border: "border-sky-500" },
-};
 
 function qualityColor(r2: number) {
   if (r2 >= 0.9) return "text-green-600";
@@ -29,15 +27,15 @@ function qualityLabel(r2: number) {
   return "Måttlig";
 }
 
-export default function StatsBadges({ regression }: Props) {
+export default function StatsBadges({ regression, modelConfig }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {Object.entries(regression).map(([model, stats]) => {
-        const meta = MODEL_META[model] || { label: model, border: "border-stone-300" };
+        const meta = getModelMeta(modelConfig, model);
         return (
           <div
             key={model}
-            className={`bg-[var(--card)] border-l-4 ${meta.border} p-4`}
+            className={`bg-[var(--card)] border-l-4 ${meta.borderClass} p-4`}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-[var(--muted)]">{meta.label}</span>

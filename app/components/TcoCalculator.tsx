@@ -10,12 +10,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-
-const COLORS: Record<string, string> = {
-  RAV4: "#dc2626",
-  XC60: "#2563eb",
-  X3: "#0ea5e9",
-};
+import { getColorsMap, getFuelOptions, getModelMeta } from "@/app/lib/model-config";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface RegressionModel {
   intercept: number;
@@ -39,6 +35,7 @@ interface TcoDefaults {
 interface Props {
   regression: Record<string, RegressionModel>;
   tcoDefaults: Record<string, TcoDefaults>;
+  modelConfig: ModelConfigMap;
 }
 
 interface ScenarioInputs {
@@ -64,12 +61,6 @@ interface PredictionResult {
   serviceTotal: number;
   taxTotal: number;
 }
-
-const FUEL_OPTIONS: Record<string, string[]> = {
-  RAV4: ["Hybrid", "Petrol"],
-  XC60: ["PHEV", "Hybrid", "Diesel", "Petrol"],
-  X3: ["PHEV", "Diesel", "Petrol"],
-};
 
 const FUEL_LABELS: Record<string, string> = {
   Hybrid: "Hybrid",
@@ -164,12 +155,16 @@ function ScenarioPanel({
   onChange,
   result,
   color,
+  modelConfig,
+  regression,
 }: {
   label: string;
   scenario: ScenarioInputs;
   onChange: (s: ScenarioInputs) => void;
   result: PredictionResult | null;
   color: string;
+  modelConfig: ModelConfigMap;
+  regression: Record<string, RegressionModel>;
 }) {
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] p-5 space-y-4">
@@ -184,14 +179,16 @@ function ScenarioPanel({
             value={scenario.model}
             onChange={(e) => {
               const model = e.target.value;
-              const fuels = FUEL_OPTIONS[model] || ["Petrol"];
+              const fuels = getFuelOptions(modelConfig, model);
               onChange({ ...scenario, model, fuel: fuels[0] });
             }}
             className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
-            <option value="RAV4">Toyota RAV4</option>
-            <option value="XC60">Volvo XC60</option>
-            <option value="X3">BMW X3</option>
+            {Object.entries(modelConfig)
+              .filter(([key]) => regression[key])
+              .map(([key, meta]) => (
+                <option key={key} value={key}>{meta.label}</option>
+              ))}
           </select>
         </div>
         <div>
@@ -201,7 +198,7 @@ function ScenarioPanel({
             onChange={(e) => onChange({ ...scenario, fuel: e.target.value })}
             className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
-            {(FUEL_OPTIONS[scenario.model] || ["Petrol"]).map((f) => (
+            {getFuelOptions(modelConfig, scenario.model).map((f) => (
               <option key={f} value={f}>
                 {FUEL_LABELS[f] || f}
               </option>
@@ -319,7 +316,8 @@ function ScenarioPanel({
   );
 }
 
-export default function TcoCalculator({ regression, tcoDefaults }: Props) {
+export default function TcoCalculator({ regression, tcoDefaults, modelConfig }: Props) {
+  const COLORS = getColorsMap(modelConfig);
   const [scenarioA, setScenarioA] = useState<ScenarioInputs>({
     ...DEFAULT_SCENARIO,
   });
@@ -371,6 +369,8 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
           onChange={setScenarioA}
           result={resultA}
           color={COLORS[scenarioA.model] || "#dc2626"}
+          modelConfig={modelConfig}
+          regression={regression}
         />
         <ScenarioPanel
           label="Scenario B"
@@ -378,6 +378,8 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
           onChange={setScenarioB}
           result={resultB}
           color={COLORS[scenarioB.model] || "#2563eb"}
+          modelConfig={modelConfig}
+          regression={regression}
         />
       </div>
 

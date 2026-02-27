@@ -12,18 +12,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-
-const COLORS: Record<string, string> = {
-  RAV4: "#dc2626",
-  XC60: "#2563eb",
-  X3: "#0ea5e9",
-};
+import { getColorsMap } from "@/app/lib/model-config";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface MileagePoint { mileage: number; price: number; }
 interface Props {
   data: Record<string, MileagePoint[]>;
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
+  modelConfig: ModelConfigMap;
 }
 
 function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
@@ -85,7 +82,8 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function MileageChart({ data, hiddenModels, onToggleModel }: Props) {
+export default function MileageChart({ data, hiddenModels, onToggleModel, modelConfig }: Props) {
+  const COLORS = getColorsMap(modelConfig);
 
   const trendLines = useMemo(() => {
     const result: Record<string, { mileage: number; median: number }[]> = {};

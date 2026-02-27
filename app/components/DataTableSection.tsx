@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DataTable from "./DataTable";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface CarsResponse {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,8 +14,15 @@ interface CarsResponse {
 
 export default function DataTableSection() {
   const [data, setData] = useState<CarsResponse | null>(null);
+  const [modelConfig, setModelConfig] = useState<ModelConfigMap>({});
   const [page, setPage] = useState(1);
   const limit = 30;
+
+  useEffect(() => {
+    fetch("/api/aggregates")
+      .then((r) => r.json())
+      .then((agg) => setModelConfig(agg.modelConfig || {}));
+  }, []);
 
   useEffect(() => {
     setData(null);
@@ -35,7 +43,7 @@ export default function DataTableSection() {
 
   return (
     <div className="space-y-4">
-      <DataTable cars={data.cars} />
+      <DataTable cars={data.cars} modelConfig={modelConfig} />
 
       {/* Pagination */}
       {data.pages > 1 && (

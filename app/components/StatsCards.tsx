@@ -1,5 +1,8 @@
 "use client";
 
+import type { ModelConfigMap } from "@/app/lib/model-config";
+import { getModelMeta } from "@/app/lib/model-config";
+
 interface ModelSummary {
   count: number;
   avgPrice: number;
@@ -12,23 +15,18 @@ interface ModelSummary {
 
 interface Props {
   summary: Record<string, ModelSummary>;
+  modelConfig: ModelConfigMap;
 }
 
-const MODEL_META: Record<string, { label: string; color: string }> = {
-  RAV4: { label: "Toyota RAV4", color: "border-red-400" },
-  XC60: { label: "Volvo XC60", color: "border-blue-400" },
-  X3: { label: "BMW X3", color: "border-sky-500" },
-};
-
-export default function StatsCards({ summary }: Props) {
+export default function StatsCards({ summary, modelConfig }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {Object.entries(summary).map(([model, stats]) => {
-        const meta = MODEL_META[model] || { label: model, color: "border-stone-300" };
+        const meta = getModelMeta(modelConfig, model);
         return (
           <div
             key={model}
-            className={`bg-[var(--card)] border-l-4 ${meta.color} p-5 space-y-3`}
+            className={`bg-[var(--card)] border-l-4 ${meta.borderClass} p-5 space-y-3`}
           >
             <h3 className="text-lg font-bold">{meta.label}</h3>
             <div className="grid grid-cols-2 gap-y-2 text-sm">

@@ -3,14 +3,6 @@ import { getDb } from "@/app/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const FUEL_MAP: Record<string, string[]> = {
-  Hybrid: ["Hybrid bensin", "Hybrid"],
-  PHEV: ["Laddhybrid", "Laddhybrid bensin", "Plug-in Hybrid"],
-  Diesel: ["Diesel"],
-  Petrol: ["Bensin"],
-  Electric: ["El"],
-};
-
 function cleanFuel(raw: string): string {
   const f = (raw || "").toLowerCase();
   if (f.includes("laddhybrid") || f.includes("plug")) return "PHEV";
@@ -19,13 +11,6 @@ function cleanFuel(raw: string): string {
   if (f.includes("bensin")) return "Petrol";
   if (f.includes("el")) return "Electric";
   return "Other";
-}
-
-function modelLabel(make: string): string {
-  if (make === "Toyota") return "RAV4";
-  if (make === "Volvo") return "XC60";
-  if (make === "BMW") return "X3";
-  return make;
 }
 
 export async function GET(req: NextRequest) {
@@ -40,7 +25,9 @@ export async function GET(req: NextRequest) {
     // Count total
     const countRows = await sql`
       SELECT COUNT(*) as total FROM cars
-      WHERE price_sek >= 20000 AND model_year >= 2005 AND mileage_mil > 0
+      WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
+        AND model_year >= 2005
+        AND mileage_mil >= 0
     `;
     const total = Number(countRows[0].total);
 
@@ -50,7 +37,9 @@ export async function GET(req: NextRequest) {
              fuel_type, horsepower, gearbox, drivetrain, color, seller_type,
              equipment_count, car_age_years
       FROM cars
-      WHERE price_sek >= 20000 AND model_year >= 2005 AND mileage_mil > 0
+      WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
+        AND model_year >= 2005
+        AND mileage_mil >= 0
       ORDER BY price_sek DESC
       LIMIT ${limit} OFFSET ${offset}
     `;

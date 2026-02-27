@@ -29,7 +29,7 @@ export default function StatsSection() {
   return (
     <>
       <section>
-        <StatsCards summary={data.summary} />
+        <StatsCards summary={data.summary} modelConfig={data.modelConfig || {}} />
       </section>
       <section className="space-y-3">
         <div>
@@ -39,7 +39,7 @@ export default function StatsSection() {
             hästkrafter, utrustning, drivlina och säljartyp.
           </p>
         </div>
-        <StatsBadges regression={data.regression} />
+        <StatsBadges regression={data.regression} modelConfig={data.modelConfig || {}} />
       </section>
     </>
   );

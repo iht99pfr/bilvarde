@@ -13,12 +13,8 @@ import {
   ReferenceLine,
   ComposedChart,
 } from "recharts";
-
-const COLORS: Record<string, string> = {
-  RAV4: "#dc2626",
-  XC60: "#2563eb",
-  X3: "#0ea5e9",
-};
+import { getColorsMap } from "@/app/lib/model-config";
+import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface RetentionPoint { age: number; retention: number; }
 interface PredictionPoint { age: number; predicted: number; lower: number; upper: number; }
@@ -28,6 +24,7 @@ interface Props {
   predictionCurves?: Record<string, Record<string, PredictionPoint[]>>;
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
+  modelConfig: ModelConfigMap;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,7 +70,8 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function RetentionChart({ retention, predictionCurves, hiddenModels, onToggleModel }: Props) {
+export default function RetentionChart({ retention, predictionCurves, hiddenModels, onToggleModel, modelConfig }: Props) {
+  const COLORS = getColorsMap(modelConfig);
   const hasPredictions = predictionCurves && Object.keys(predictionCurves).length > 0;
 
   const allAges = new Set<number>();
