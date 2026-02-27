@@ -25,14 +25,13 @@ export default async function Home() {
     <div className="space-y-12">
       {/* Hero */}
       <section className="text-center py-8">
-        <h1 className="text-4xl font-bold tracking-tight">
-          Swedish Used Car{" "}
-          <span className="text-amber-400">Depreciation Guide</span>
+        <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)]">
+          Värdeminskningsguide för begagnade bilar
         </h1>
-        <p className="text-zinc-400 mt-3 max-w-2xl mx-auto">
-          Real depreciation data from {cars.length} Blocket.se listings.
-          Compare how Toyota RAV4, Volvo XC60, and BMW X3 hold their value over
-          time.
+        <p className="text-[var(--muted)] mt-3 max-w-2xl mx-auto">
+          Riktig data från {cars.length} annonser på Blocket.se.
+          Jämför hur Toyota RAV4, Volvo XC60 och BMW X3 tappar i värde
+          över tid, miltal och bränsletyp.
         </p>
       </section>
 
@@ -44,10 +43,10 @@ export default async function Home() {
       {/* Model accuracy */}
       <section className="space-y-3">
         <div>
-          <h2 className="text-2xl font-bold">Model Accuracy</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Multivariate regression accounting for age, mileage, fuel type, HP,
-            equipment, drivetrain, and seller type.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Modellprecision</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Multivariat regression som tar hänsyn till ålder, miltal, bränsletyp,
+            hästkrafter, utrustning, drivlina och säljartyp.
           </p>
         </div>
         <StatsBadges regression={aggregates.regression} />
@@ -56,10 +55,10 @@ export default async function Home() {
       {/* Depreciation by Age */}
       <section id="depreciation" className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Price vs Age</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Each dot is a real listing. Trend lines show predicted price with
-            95% confidence bands. Filter by fuel type to compare.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Pris per ålder</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Varje punkt är en verklig annons. Trendlinjer visar predikterat pris
+            med 95% konfidensband. Filtrera på bränsletyp för att jämföra.
           </p>
         </div>
         <DepreciationChart
@@ -72,10 +71,10 @@ export default async function Home() {
       {/* Value Retention */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Value Retention</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Percentage of the &ldquo;new&rdquo; price retained at each age.
-            Shaded bands show 95% prediction uncertainty.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Restvärde</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Andel av nypriset som behålls vid varje ålder.
+            Skuggade band visar 95% prediktionsosäkerhet.
           </p>
         </div>
         <RetentionChart
@@ -87,9 +86,9 @@ export default async function Home() {
       {/* Mileage Impact */}
       <section id="mileage" className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Mileage Impact</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            How mileage correlates with asking price across models.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Miltalseffekt</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Hur miltal korrelerar med begärt pris för respektive modell.
           </p>
         </div>
         <MileageChart data={aggregates.mileageCost} />
@@ -98,11 +97,11 @@ export default async function Home() {
       {/* TCO Calculator */}
       <section id="tco" className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Ownership Cost Calculator</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Compare the total cost of owning two different cars. Predictions
-            are computed client-side using our regression model trained
-            on {cars.length} real listings.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Ägandekostnadsberäknare</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Jämför den totala ägandekostnaden för två olika bilar. Prediktioner
+            beräknas i realtid med vår regressionsmodell tränad
+            på {cars.length} verkliga annonser.
           </p>
         </div>
         <TcoCalculator
@@ -112,37 +111,37 @@ export default async function Home() {
       </section>
 
       {/* Key Insights */}
-      <section id="factors" className="space-y-4">
-        <h2 className="text-2xl font-bold">Key Insights</h2>
+      <section id="insights" className="space-y-4">
+        <h2 className="text-2xl font-bold text-[var(--foreground)]">Viktiga insikter</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800">
-            <h3 className="font-semibold text-red-400 mb-2">
-              Toyota RAV4 — Best Retention
+          <div className="bg-[var(--card)] p-5 border-l-4 border-red-400">
+            <h3 className="font-semibold text-red-600 mb-2">
+              Toyota RAV4 — Bäst restvärde
             </h3>
-            <p className="text-sm text-zinc-400">
-              The RAV4 holds its value exceptionally well. After 3 years it
-              retains ~89% of its new price, and after 5 years still ~73%.
-              Hybrid models command a premium. Loses ~14k SEK per 1,000 mil.
+            <p className="text-sm text-[var(--muted)]">
+              RAV4 behåller sitt värde exceptionellt bra. Efter 3 år kvarstår
+              ca 89% av nypriset, och efter 5 år fortfarande ca 73%.
+              Hybridmodeller har ett pristillägg. Tappar ca 14k kr per 1 000 mil.
             </p>
           </div>
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800">
-            <h3 className="font-semibold text-blue-300 mb-2">
-              Volvo XC60 — Middle Ground
+          <div className="bg-[var(--card)] p-5 border-l-4 border-blue-400">
+            <h3 className="font-semibold text-blue-600 mb-2">
+              Volvo XC60 — Mellanklass
             </h3>
-            <p className="text-sm text-zinc-400">
-              The XC60 sits between the RAV4 and X3 in depreciation. Strong
-              brand loyalty in Sweden helps. PHEV variants retain better value.
-              Loses ~18k SEK per 1,000 mil.
+            <p className="text-sm text-[var(--muted)]">
+              XC60 ligger mellan RAV4 och X3 i värdeminskning. Stark
+              varumärkeslojalitet i Sverige hjälper. PHEV-varianter behåller
+              värdet bättre. Tappar ca 18k kr per 1 000 mil.
             </p>
           </div>
-          <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800">
-            <h3 className="font-semibold text-blue-400 mb-2">
-              BMW X3 — Steepest Drop
+          <div className="bg-[var(--card)] p-5 border-l-4 border-sky-400">
+            <h3 className="font-semibold text-sky-600 mb-2">
+              BMW X3 — Störst tapp
             </h3>
-            <p className="text-sm text-zinc-400">
-              The X3 depreciates the fastest of the three. After 3 years it
-              may retain only ~53% of its original value. Higher maintenance
-              costs and lower demand contribute. Loses ~18k SEK per 1,000 mil.
+            <p className="text-sm text-[var(--muted)]">
+              X3 tappar mest av de tre. Efter 3 år kan den behålla
+              endast ca 53% av sitt ursprungspris. Högre underhållskostnader
+              och lägre efterfrågan bidrar. Tappar ca 18k kr per 1 000 mil.
             </p>
           </div>
         </div>
@@ -151,35 +150,34 @@ export default async function Home() {
       {/* Data Explorer */}
       <section id="explorer" className="space-y-4">
         <div>
-          <h2 className="text-2xl font-bold">Data Explorer</h2>
-          <p className="text-zinc-400 text-sm mt-1">
-            Browse all {cars.length} scraped listings. Sort by any column, filter
-            by model or fuel type.
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Alla bilar</h2>
+          <p className="text-[var(--muted)] text-sm mt-1">
+            Bläddra bland alla {cars.length} insamlade annonser. Sortera på valfri
+            kolumn eller filtrera på modell och bränsletyp.
           </p>
         </div>
         <DataTable cars={cars} />
       </section>
 
       {/* Methodology */}
-      <section className="bg-zinc-900/50 rounded-xl p-6 border border-zinc-800 text-sm text-zinc-400 space-y-2">
-        <h3 className="text-zinc-200 font-semibold">Methodology</h3>
+      <section className="bg-[var(--card)] p-6 border border-[var(--border)] text-sm text-[var(--muted)] space-y-2">
+        <h3 className="text-[var(--foreground)] font-semibold">Metod</h3>
         <p>
-          Data was scraped from Blocket.se in February 2026. We collected ~100
-          listings each for the Toyota RAV4, Volvo XC60, and BMW X3. Listings
-          with prices below 20,000 SEK or model years before 2005 were
-          excluded.
+          Data insamlades från Blocket.se i februari 2026. Vi samlade in ca 100
+          annonser vardera för Toyota RAV4, Volvo XC60 och BMW X3. Annonser
+          med priser under 20 000 kr eller årsmodeller före 2005 exkluderades.
         </p>
         <p>
-          Depreciation is modelled using multivariate linear regression with 10
-          features: car age, mileage, horsepower, equipment count, fuel type
-          (Hybrid/PHEV/Diesel/Electric dummies), seller type, and drivetrain.
-          This accounts for the fact that different trims and fuel types have
-          different base prices.
+          Värdeminskning modelleras med multivariat linjär regression med 10
+          variabler: bilålder, miltal, hästkrafter, utrustningsantal, bränsletyp
+          (Hybrid/PHEV/Diesel/El), säljartyp och drivlina.
+          Detta korrigerar för att olika utrustningsnivåer och bränsletyper
+          har olika nypris.
         </p>
         <p>
-          95% prediction intervals use ±1.96 × residual standard error. The TCO
-          calculator uses these same regression coefficients client-side to
-          predict buy/sell prices for any configuration.
+          95% prediktionsintervall använder ±1,96 × residual standardfel. Ägandekostnadsberäknaren
+          använder samma regressionskoefficienter i klienten för att prediktera
+          köp/säljpriser för valfri konfiguration.
         </p>
       </section>
     </div>

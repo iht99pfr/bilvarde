@@ -25,6 +25,14 @@ interface Props {
 
 type SortKey = "price" | "year" | "mileage" | "hp";
 
+const FUEL_LABELS: Record<string, string> = {
+  Hybrid: "Hybrid",
+  PHEV: "PHEV",
+  Diesel: "Diesel",
+  Petrol: "Bensin",
+  Electric: "El",
+};
+
 export default function DataTable({ cars }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -61,8 +69,8 @@ export default function DataTable({ cars }: Props) {
   };
 
   const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <span className="text-zinc-600 ml-1">↕</span>;
-    return <span className="text-amber-400 ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
+    if (sortKey !== col) return <span className="text-[var(--muted)] ml-1">↕</span>;
+    return <span className="text-[var(--foreground)] ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
   };
 
   const fuels = [...new Set(cars.map((c) => c.fuel))].sort();
@@ -73,9 +81,9 @@ export default function DataTable({ cars }: Props) {
         <select
           value={filterModel}
           onChange={(e) => setFilterModel(e.target.value)}
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+          className="bg-[var(--card)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
         >
-          <option value="all">All Models</option>
+          <option value="all">Alla modeller</option>
           <option value="RAV4">Toyota RAV4</option>
           <option value="XC60">Volvo XC60</option>
           <option value="X3">BMW X3</option>
@@ -83,51 +91,51 @@ export default function DataTable({ cars }: Props) {
         <select
           value={filterFuel}
           onChange={(e) => setFilterFuel(e.target.value)}
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+          className="bg-[var(--card)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
         >
-          <option value="all">All Fuels</option>
+          <option value="all">Alla bränslen</option>
           {fuels.map((f) => (
             <option key={f} value={f}>
-              {f}
+              {FUEL_LABELS[f] || f}
             </option>
           ))}
         </select>
-        <span className="text-zinc-500 text-sm self-center">
-          {filtered.length} cars
+        <span className="text-[var(--muted)] text-sm self-center">
+          {filtered.length} bilar
         </span>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-zinc-800">
+      <div className="overflow-x-auto border border-[var(--border)]">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-900 text-zinc-400">
+          <thead className="bg-[var(--card)] text-[var(--muted)]">
             <tr>
-              <th className="px-3 py-2 text-left">Make / Model</th>
+              <th className="px-3 py-2 text-left">Märke / Modell</th>
               <th
-                className="px-3 py-2 text-right cursor-pointer hover:text-zinc-100"
+                className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
                 onClick={() => toggleSort("year")}
               >
-                Year <SortIcon col="year" />
+                Årsmodell <SortIcon col="year" />
               </th>
               <th
-                className="px-3 py-2 text-right cursor-pointer hover:text-zinc-100"
+                className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
                 onClick={() => toggleSort("price")}
               >
-                Price <SortIcon col="price" />
+                Pris <SortIcon col="price" />
               </th>
               <th
-                className="px-3 py-2 text-right cursor-pointer hover:text-zinc-100"
+                className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
                 onClick={() => toggleSort("mileage")}
               >
-                Mileage <SortIcon col="mileage" />
+                Miltal <SortIcon col="mileage" />
               </th>
-              <th className="px-3 py-2 text-left">Fuel</th>
+              <th className="px-3 py-2 text-left">Bränsle</th>
               <th
-                className="px-3 py-2 text-right cursor-pointer hover:text-zinc-100"
+                className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
                 onClick={() => toggleSort("hp")}
               >
-                HP <SortIcon col="hp" />
+                HK <SortIcon col="hp" />
               </th>
-              <th className="px-3 py-2 text-left">Drive</th>
-              <th className="px-3 py-2 text-left">Seller</th>
+              <th className="px-3 py-2 text-left">Drivlina</th>
+              <th className="px-3 py-2 text-left">Säljare</th>
               <th className="px-3 py-2 text-left">Reg</th>
             </tr>
           </thead>
@@ -135,41 +143,43 @@ export default function DataTable({ cars }: Props) {
             {filtered.slice(0, 100).map((car) => (
               <tr
                 key={car.id}
-                className="border-t border-zinc-800/50 hover:bg-zinc-800/30 transition"
+                className="border-t border-[var(--border)] hover:bg-[var(--card)]/50 transition"
               >
-                <td className="px-3 py-2 font-medium">
+                <td className="px-3 py-2 font-medium text-[var(--foreground)]">
                   {car.make} {car.model}
                 </td>
-                <td className="px-3 py-2 text-right font-mono">{car.year}</td>
-                <td className="px-3 py-2 text-right font-mono text-amber-400">
-                  {car.price.toLocaleString()}
+                <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">{car.year}</td>
+                <td className="px-3 py-2 text-right font-mono font-semibold text-[var(--foreground)]">
+                  {car.price.toLocaleString("sv-SE")} kr
                 </td>
-                <td className="px-3 py-2 text-right font-mono">
-                  {car.mileage.toLocaleString()} mil
+                <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">
+                  {car.mileage.toLocaleString("sv-SE")} mil
                 </td>
                 <td className="px-3 py-2">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
                       car.fuel === "Hybrid"
-                        ? "bg-green-900/50 text-green-400"
+                        ? "bg-green-100 text-green-700"
                         : car.fuel === "PHEV"
-                        ? "bg-blue-900/50 text-blue-400"
+                        ? "bg-blue-100 text-blue-700"
                         : car.fuel === "Diesel"
-                        ? "bg-yellow-900/50 text-yellow-400"
+                        ? "bg-amber-100 text-amber-700"
                         : car.fuel === "Electric"
-                        ? "bg-purple-900/50 text-purple-400"
-                        : "bg-zinc-800 text-zinc-400"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-stone-100 text-stone-600"
                     }`}
                   >
-                    {car.fuel}
+                    {FUEL_LABELS[car.fuel] || car.fuel}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-right font-mono">{car.hp}</td>
-                <td className="px-3 py-2 text-xs text-zinc-400">
+                <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">{car.hp}</td>
+                <td className="px-3 py-2 text-xs text-[var(--muted)]">
                   {car.drivetrain}
                 </td>
-                <td className="px-3 py-2 text-xs text-zinc-500">{car.seller}</td>
-                <td className="px-3 py-2 font-mono text-xs text-zinc-500">
+                <td className="px-3 py-2 text-xs text-[var(--muted)]">
+                  {car.seller === "dealer" ? "Handlare" : "Privat"}
+                </td>
+                <td className="px-3 py-2 font-mono text-xs text-[var(--muted)]">
                   {car.regNumber}
                 </td>
               </tr>

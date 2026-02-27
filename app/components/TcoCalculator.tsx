@@ -12,9 +12,9 @@ import {
 } from "recharts";
 
 const COLORS: Record<string, string> = {
-  RAV4: "#ef4444",
-  XC60: "#60a5fa",
-  X3: "#3b82f6",
+  RAV4: "#dc2626",
+  XC60: "#2563eb",
+  X3: "#0ea5e9",
 };
 
 interface RegressionModel {
@@ -60,12 +60,23 @@ interface PredictionResult {
   confidence: number;
   totalCostWithFixed: number;
   monthlyTotal: number;
+  insuranceTotal: number;
+  serviceTotal: number;
+  taxTotal: number;
 }
 
 const FUEL_OPTIONS: Record<string, string[]> = {
   RAV4: ["Hybrid", "Petrol"],
   XC60: ["PHEV", "Hybrid", "Diesel", "Petrol"],
   X3: ["PHEV", "Diesel", "Petrol"],
+};
+
+const FUEL_LABELS: Record<string, string> = {
+  Hybrid: "Hybrid",
+  PHEV: "PHEV",
+  Diesel: "Diesel",
+  Petrol: "Bensin",
+  Electric: "El",
 };
 
 const DEFAULT_SCENARIO: ScenarioInputs = {
@@ -124,9 +135,10 @@ function computeTco(
   const months = scenario.holdingYears * 12;
   const totalMilesDriven = scenario.annualMileage * scenario.holdingYears;
 
-  const fixedCosts =
-    (tcoDefault.insurancePerYear + tcoDefault.servicePerYear + tcoDefault.taxPerYear) *
-    scenario.holdingYears;
+  const insuranceTotal = tcoDefault.insurancePerYear * scenario.holdingYears;
+  const serviceTotal = tcoDefault.servicePerYear * scenario.holdingYears;
+  const taxTotal = tcoDefault.taxPerYear * scenario.holdingYears;
+  const fixedCosts = insuranceTotal + serviceTotal + taxTotal;
 
   const totalCost = valueLoss + fixedCosts;
 
@@ -140,6 +152,9 @@ function computeTco(
     confidence: reg.residual_se,
     totalCostWithFixed: totalCost,
     monthlyTotal: Math.round(totalCost / months),
+    insuranceTotal,
+    serviceTotal,
+    taxTotal,
   };
 }
 
@@ -157,14 +172,14 @@ function ScenarioPanel({
   color: string;
 }) {
   return (
-    <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5 space-y-4">
+    <div className="bg-[var(--card)] border border-[var(--border)] p-5 space-y-4">
       <h3 className="font-semibold text-lg" style={{ color }}>
         {label}
       </h3>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Model</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Modell</label>
           <select
             value={scenario.model}
             onChange={(e) => {
@@ -172,7 +187,7 @@ function ScenarioPanel({
               const fuels = FUEL_OPTIONS[model] || ["Petrol"];
               onChange({ ...scenario, model, fuel: fuels[0] });
             }}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
             <option value="RAV4">Toyota RAV4</option>
             <option value="XC60">Volvo XC60</option>
@@ -180,25 +195,25 @@ function ScenarioPanel({
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Fuel type</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Bränsle</label>
           <select
             value={scenario.fuel}
             onChange={(e) => onChange({ ...scenario, fuel: e.target.value })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
             {(FUEL_OPTIONS[scenario.model] || ["Petrol"]).map((f) => (
               <option key={f} value={f}>
-                {f}
+                {FUEL_LABELS[f] || f}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Model year</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Årsmodell</label>
           <select
             value={scenario.year}
             onChange={(e) => onChange({ ...scenario, year: Number(e.target.value) })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
             {Array.from({ length: 12 }, (_, i) => 2025 - i).map((y) => (
               <option key={y} value={y}>
@@ -208,37 +223,37 @@ function ScenarioPanel({
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Current mileage (mil)</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Nuvarande miltal</label>
           <input
             type="number"
             value={scenario.mileage}
             onChange={(e) => onChange({ ...scenario, mileage: Number(e.target.value) || 0 })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm font-mono text-[var(--foreground)]"
             step={500}
             min={0}
           />
         </div>
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Hold for (years)</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Behålla i (år)</label>
           <select
             value={scenario.holdingYears}
             onChange={(e) => onChange({ ...scenario, holdingYears: Number(e.target.value) })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
           >
             {[1, 2, 3, 4, 5, 6, 7, 8].map((y) => (
               <option key={y} value={y}>
-                {y} {y === 1 ? "year" : "years"}
+                {y} år
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">Annual mileage (mil/yr)</label>
+          <label className="text-xs text-[var(--muted)] block mb-1">Årlig körning (mil/år)</label>
           <input
             type="number"
             value={scenario.annualMileage}
             onChange={(e) => onChange({ ...scenario, annualMileage: Number(e.target.value) || 0 })}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono"
+            className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm font-mono text-[var(--foreground)]"
             step={100}
             min={0}
           />
@@ -246,41 +261,57 @@ function ScenarioPanel({
       </div>
 
       {result && (
-        <div className="pt-3 border-t border-zinc-800 space-y-3">
+        <div className="pt-3 border-t border-[var(--border)] space-y-3">
           <div className="grid grid-cols-2 gap-y-2 text-sm">
-            <span className="text-zinc-500">Est. buy price</span>
-            <span className="text-right font-mono text-amber-400">
-              {result.buyPrice.toLocaleString()} kr
+            <span className="text-[var(--muted)]">Uppskattat köppris</span>
+            <span className="text-right font-mono font-semibold text-[var(--foreground)]">
+              {result.buyPrice.toLocaleString("sv-SE")} kr
             </span>
-            <span className="text-zinc-500">Est. sell price</span>
-            <span className="text-right font-mono text-zinc-300">
-              {result.sellPrice.toLocaleString()} kr
+            <span className="text-[var(--muted)]">Uppskattat säljpris</span>
+            <span className="text-right font-mono text-[var(--foreground)]">
+              {result.sellPrice.toLocaleString("sv-SE")} kr
             </span>
-            <span className="text-zinc-500">Value loss</span>
-            <span className="text-right font-mono text-red-400">
-              −{result.valueLoss.toLocaleString()} kr
+            <span className="text-[var(--muted)]">Värdeförlust</span>
+            <span className="text-right font-mono text-red-600">
+              −{result.valueLoss.toLocaleString("sv-SE")} kr
             </span>
           </div>
-          <div className="bg-zinc-800/50 rounded-lg p-3 space-y-1">
+
+          <div className="text-xs text-[var(--muted)] space-y-1 pt-2 border-t border-[var(--border)]">
+            <div className="flex justify-between">
+              <span>Försäkring ({scenario.holdingYears} år)</span>
+              <span className="font-mono text-[var(--foreground)]">{result.insuranceTotal.toLocaleString("sv-SE")} kr</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Service &amp; underhåll</span>
+              <span className="font-mono text-[var(--foreground)]">{result.serviceTotal.toLocaleString("sv-SE")} kr</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Fordonsskatt</span>
+              <span className="font-mono text-[var(--foreground)]">{result.taxTotal.toLocaleString("sv-SE")} kr</span>
+            </div>
+          </div>
+
+          <div className="bg-white/60 p-3 space-y-1">
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Monthly depreciation</span>
-              <span className="font-mono font-semibold text-amber-400">
-                {result.monthlyDepreciation.toLocaleString()} kr/mo
+              <span className="text-[var(--muted)]">Månadskostnad (värdeförlust)</span>
+              <span className="font-mono font-semibold text-[var(--foreground)]">
+                {result.monthlyDepreciation.toLocaleString("sv-SE")} kr/mån
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Monthly total (incl. fixed)</span>
-              <span className="font-mono font-semibold">
-                {result.monthlyTotal.toLocaleString()} kr/mo
+              <span className="text-[var(--muted)]">Månadskostnad (totalt)</span>
+              <span className="font-mono font-bold text-[var(--foreground)]">
+                {result.monthlyTotal.toLocaleString("sv-SE")} kr/mån
               </span>
             </div>
-            <div className="flex justify-between text-xs text-zinc-500">
-              <span>Cost per mil driven</span>
-              <span className="font-mono">{result.costPerMil.toLocaleString()} kr/mil</span>
+            <div className="flex justify-between text-xs text-[var(--muted)]">
+              <span>Kostnad per mil</span>
+              <span className="font-mono">{result.costPerMil.toLocaleString("sv-SE")} kr/mil</span>
             </div>
           </div>
-          <p className="text-xs text-zinc-600">
-            ±{(result.confidence * 1.96 / 1000).toFixed(0)}k SEK prediction uncertainty (95% CI)
+          <p className="text-xs text-[var(--muted)]">
+            ±{(result.confidence * 1.96 / 1000).toFixed(0)}k kr prediktionsosäkerhet (95% KI)
           </p>
         </div>
       )}
@@ -313,7 +344,6 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
     return reg && tco ? computeTco(scenarioB, reg, tco) : null;
   }, [scenarioB, regression, tcoDefaults]);
 
-  // Comparison bar chart
   const comparisonData = useMemo(() => {
     if (!resultA || !resultB) return null;
     return [
@@ -340,20 +370,20 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
           scenario={scenarioA}
           onChange={setScenarioA}
           result={resultA}
-          color={COLORS[scenarioA.model] || "#ef4444"}
+          color={COLORS[scenarioA.model] || "#dc2626"}
         />
         <ScenarioPanel
           label="Scenario B"
           scenario={scenarioB}
           onChange={setScenarioB}
           result={resultB}
-          color={COLORS[scenarioB.model] || "#3b82f6"}
+          color={COLORS[scenarioB.model] || "#2563eb"}
         />
       </div>
 
       {comparisonData && (
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5">
-          <h4 className="font-semibold mb-3">Monthly Cost Comparison</h4>
+        <div className="bg-[var(--card)] border border-[var(--border)] p-5">
+          <h4 className="font-semibold mb-3 text-[var(--foreground)]">Jämförelse — månadskostnad</h4>
           <ResponsiveContainer width="100%" height={120}>
             <BarChart
               data={comparisonData}
@@ -362,39 +392,39 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
             >
               <XAxis
                 type="number"
-                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
                 tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k kr`}
               />
               <YAxis
                 type="category"
                 dataKey="name"
                 width={130}
-                tick={{ fill: "#a1a1aa", fontSize: 12 }}
+                tick={{ fill: "var(--muted)", fontSize: 12 }}
               />
               <Tooltip
-                contentStyle={{ background: "#27272a", border: "1px solid #3f3f46", borderRadius: 8 }}
+                contentStyle={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 8 }}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={(value: any) => [`${Number(value).toLocaleString()} kr/mo`, "Monthly cost"]}
+                formatter={(value: any) => [`${Number(value).toLocaleString("sv-SE")} kr/mån`, "Månadskostnad"]}
               />
-              <Bar dataKey="monthly" radius={[0, 6, 6, 0]}>
+              <Bar dataKey="monthly" radius={[0, 4, 4, 0]}>
                 {comparisonData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[entry.model] || "#71717a"} />
+                  <Cell key={index} fill={COLORS[entry.model] || "#6b6560"} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
 
           {delta !== 0 && (
-            <p className="text-center mt-3 text-sm">
-              <span className="text-amber-400 font-semibold">
+            <p className="text-center mt-3 text-sm text-[var(--foreground)]">
+              <span className="font-semibold" style={{ color: COLORS[scenarioA.model] }}>
                 {scenarioA.model} ({scenarioA.year})
               </span>{" "}
-              costs{" "}
-              <span className={`font-mono font-bold ${delta > 0 ? "text-red-400" : "text-green-400"}`}>
-                {Math.abs(delta).toLocaleString()} kr/mo {delta > 0 ? "more" : "less"}
+              kostar{" "}
+              <span className={`font-mono font-bold ${delta > 0 ? "text-red-600" : "text-green-600"}`}>
+                {Math.abs(delta).toLocaleString("sv-SE")} kr/mån {delta > 0 ? "mer" : "mindre"}
               </span>{" "}
-              than{" "}
-              <span className="text-amber-400 font-semibold">
+              än{" "}
+              <span className="font-semibold" style={{ color: COLORS[scenarioB.model] }}>
                 {scenarioB.model} ({scenarioB.year})
               </span>
             </p>

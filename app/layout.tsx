@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bilvärde — Swedish Used Car Depreciation Guide",
+  title: "Bilvärde — Vad kostar det att äga en bil?",
   description:
-    "Compare depreciation curves for Toyota RAV4, Volvo XC60, and BMW X3 based on real Blocket listing data.",
+    "Jämför värdeminskning för Toyota RAV4, Volvo XC60 och BMW X3 baserat på riktiga Blocket-annonser.",
 };
 
 export default function RootLayout({
@@ -24,38 +24,45 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="sv">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm px-6 py-4">
+        <nav className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur-sm px-6 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <span className="text-xl font-bold tracking-tight shrink-0">
-              Bil<span className="text-amber-400">värde</span>
-            </span>
-            <div className="flex gap-3 sm:gap-4 text-sm text-zinc-400 overflow-x-auto scrollbar-hide">
-              <a href="#depreciation" className="hover:text-zinc-100 transition whitespace-nowrap">
-                Depreciation
+            <a href="#" className="text-xl font-bold tracking-tight shrink-0 text-[var(--foreground)]">
+              Bilvärde
+            </a>
+            <div className="flex gap-3 sm:gap-5 text-sm text-[var(--muted)] overflow-x-auto scrollbar-hide">
+              <a href="#depreciation" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+                Värdeminskning
               </a>
-              <a href="#mileage" className="hover:text-zinc-100 transition whitespace-nowrap">
-                Mileage
+              <a href="#mileage" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+                Miltal
               </a>
-              <a href="#tco" className="hover:text-zinc-100 transition whitespace-nowrap">
-                TCO
+              <a href="#tco" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+                Ägandekostnad
               </a>
-              <a href="#factors" className="hover:text-zinc-100 transition whitespace-nowrap">
-                Insights
+              <a href="#factors" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+                Insikter
               </a>
-              <a href="#explorer" className="hover:text-zinc-100 transition whitespace-nowrap">
-                Explorer
+              <a href="#explorer" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+                Alla bilar
               </a>
             </div>
           </div>
         </nav>
         <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
-        <footer className="border-t border-zinc-800 px-6 py-6 text-center text-xs text-zinc-600">
-          <p>Data scraped from Blocket.se — Last updated February 2026</p>
-          <p>Built with Next.js + Recharts</p>
+        <footer className="border-t border-[var(--border)] px-6 py-8">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
+            <div className="flex items-center gap-4">
+              <span className="font-semibold text-[var(--foreground)]">Bilvärde</span>
+              <span>Ett projekt av <a href="https://upnorth.ai" className="underline hover:text-[var(--foreground)] transition" target="_blank" rel="noopener noreferrer">Up North AI</a></span>
+            </div>
+            <div className="flex gap-4">
+              <span>Data från Blocket.se — Uppdaterad feb 2026</span>
+            </div>
+          </div>
         </footer>
       </body>
     </html>
