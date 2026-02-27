@@ -16,7 +16,7 @@ import {
 
 const COLORS: Record<string, string> = {
   RAV4: "#ef4444",
-  XC60: "#1e3a5f",
+  XC60: "#60a5fa",
   X3: "#3b82f6",
 };
 
@@ -51,7 +51,7 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
     const point: Record<string, number | number[]> = { age };
     for (const [model, r] of Object.entries(retention)) {
       const match = r.points.find((p) => p.age === age);
-      if (match) point[model] = match.retention;
+      if (match) point[model] = Math.min(match.retention, 100);
 
       // Add confidence band from prediction curves
       if (hasPredictions) {
@@ -59,7 +59,7 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
         const predMatch = curve?.find((p) => p.age === age);
         if (predMatch && r.newPrice > 0) {
           const retLower = Math.max(0, (predMatch.lower / r.newPrice) * 100);
-          const retUpper = Math.min(150, (predMatch.upper / r.newPrice) * 100);
+          const retUpper = Math.min(100, (predMatch.upper / r.newPrice) * 100);
           point[`${model}_range`] = [
             Math.round(retLower * 10) / 10,
             Math.round(retUpper * 10) / 10,
@@ -74,16 +74,16 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={450}>
-      <ChartComponent data={data} margin={{ top: 10, right: 20, bottom: 20, left: 20 }}>
+      <ChartComponent data={data} margin={{ top: 10, right: 20, bottom: 40, left: 20 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
         <XAxis
           dataKey="age"
           tick={{ fill: "#a1a1aa", fontSize: 12 }}
-          label={{ value: "Car Age (years)", position: "bottom", fill: "#71717a", offset: 0 }}
+          label={{ value: "Car Age (years)", position: "bottom", fill: "#71717a", offset: 15 }}
         />
         <YAxis
           tick={{ fill: "#a1a1aa", fontSize: 12 }}
-          domain={[0, 110]}
+          domain={[0, 100]}
           tickFormatter={(v: number) => `${v}%`}
           label={{
             value: "% of New Price Retained",
@@ -103,7 +103,7 @@ export default function RetentionChart({ retention, predictionCurves }: Props) {
           }}
           labelFormatter={(label: any) => `Age: ${label} years`}
         />
-        <Legend />
+        <Legend verticalAlign="top" height={36} />
         <ReferenceLine y={50} stroke="#71717a" strokeDasharray="6 4" label={{ value: "50%", fill: "#71717a", position: "right" }} />
         {hasPredictions && Object.keys(retention).map((model) => (
           <Area

@@ -13,7 +13,7 @@ interface Props {
 
 const MODEL_META: Record<string, { label: string; border: string }> = {
   RAV4: { label: "Toyota RAV4", border: "border-red-500/50" },
-  XC60: { label: "Volvo XC60", border: "border-blue-900/50" },
+  XC60: { label: "Volvo XC60", border: "border-blue-400/50" },
   X3: { label: "BMW X3", border: "border-blue-500/50" },
 };
 

@@ -13,7 +13,7 @@ import {
 
 const COLORS: Record<string, string> = {
   RAV4: "#ef4444",
-  XC60: "#1e3a5f",
+  XC60: "#60a5fa",
   X3: "#3b82f6",
 };
 
@@ -25,6 +25,9 @@ interface RegressionModel {
   residual_se: number;
   n_samples: number;
   features: string[];
+  medianHp: number;
+  medianEquipment: number;
+  typicalAwd: number;
 }
 
 interface TcoDefaults {
@@ -79,19 +82,18 @@ function predictPrice(
   age: number,
   mileage: number,
   fuel: string,
-  isAwd: boolean,
 ): { predicted: number; lower: number; upper: number } {
   const features: Record<string, number> = {
     car_age_years: age,
     mileage_mil: mileage,
-    horsepower: 200, // typical midrange
-    equipment_count: 20,
+    horsepower: reg.medianHp,
+    equipment_count: reg.medianEquipment,
     is_hybrid: fuel === "Hybrid" ? 1 : 0,
     is_phev: fuel === "PHEV" ? 1 : 0,
     is_diesel: fuel === "Diesel" ? 1 : 0,
     is_electric: fuel === "Electric" ? 1 : 0,
     is_dealer: 0,
-    is_awd: isAwd ? 1 : 0,
+    is_awd: reg.typicalAwd,
   };
 
   let predicted = reg.intercept;
@@ -114,10 +116,9 @@ function computeTco(
   const currentAge = 2026 - scenario.year;
   const futureAge = currentAge + scenario.holdingYears;
   const futureMileage = scenario.mileage + scenario.annualMileage * scenario.holdingYears;
-  const isAwd = scenario.model !== "X3"; // RAV4 and XC60 mostly AWD
 
-  const buy = predictPrice(reg, currentAge, scenario.mileage, scenario.fuel, isAwd);
-  const sell = predictPrice(reg, futureAge, futureMileage, scenario.fuel, isAwd);
+  const buy = predictPrice(reg, currentAge, scenario.mileage, scenario.fuel);
+  const sell = predictPrice(reg, futureAge, futureMileage, scenario.fuel);
 
   const valueLoss = Math.max(0, buy.predicted - sell.predicted);
   const months = scenario.holdingYears * 12;
@@ -362,7 +363,7 @@ export default function TcoCalculator({ regression, tcoDefaults }: Props) {
               <XAxis
                 type="number"
                 tick={{ fill: "#a1a1aa", fontSize: 12 }}
-                tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k`}
+                tickFormatter={(v: number) => `${(v / 1000).toFixed(1)}k kr`}
               />
               <YAxis
                 type="category"

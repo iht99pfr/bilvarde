@@ -28,30 +28,25 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
       >
-        <nav className="border-b border-zinc-800 px-6 py-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl font-bold tracking-tight">
-                Bil<span className="text-amber-400">värde</span>
-              </span>
-              <span className="text-xs text-zinc-500 hidden sm:inline">
-                Swedish Used Car Depreciation Guide
-              </span>
-            </div>
-            <div className="flex gap-4 text-sm text-zinc-400">
-              <a href="#depreciation" className="hover:text-zinc-100 transition">
+        <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm px-6 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <span className="text-xl font-bold tracking-tight shrink-0">
+              Bil<span className="text-amber-400">värde</span>
+            </span>
+            <div className="flex gap-3 sm:gap-4 text-sm text-zinc-400 overflow-x-auto scrollbar-hide">
+              <a href="#depreciation" className="hover:text-zinc-100 transition whitespace-nowrap">
                 Depreciation
               </a>
-              <a href="#mileage" className="hover:text-zinc-100 transition">
+              <a href="#mileage" className="hover:text-zinc-100 transition whitespace-nowrap">
                 Mileage
               </a>
-              <a href="#tco" className="hover:text-zinc-100 transition">
+              <a href="#tco" className="hover:text-zinc-100 transition whitespace-nowrap">
                 TCO
               </a>
-              <a href="#factors" className="hover:text-zinc-100 transition">
-                Factors
+              <a href="#factors" className="hover:text-zinc-100 transition whitespace-nowrap">
+                Insights
               </a>
-              <a href="#explorer" className="hover:text-zinc-100 transition">
+              <a href="#explorer" className="hover:text-zinc-100 transition whitespace-nowrap">
                 Explorer
               </a>
             </div>
@@ -59,8 +54,8 @@ export default function RootLayout({
         </nav>
         <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
         <footer className="border-t border-zinc-800 px-6 py-6 text-center text-xs text-zinc-600">
-          Data scraped from Blocket.se — {new Date().getFullYear()} — Built with
-          Next.js + Recharts
+          <p>Data scraped from Blocket.se — Last updated February 2026</p>
+          <p>Built with Next.js + Recharts</p>
         </footer>
       </body>
     </html>
