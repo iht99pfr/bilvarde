@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 
 interface Car {
   id: string;
+  url: string;
   make: string;
   model: string;
   year: number;
@@ -13,7 +14,6 @@ interface Car {
   fuel: string;
   hp: number;
   seller: string;
-  regNumber: string;
   color: string;
   drivetrain: string;
   equipmentCount: number;
@@ -136,7 +136,7 @@ export default function DataTable({ cars }: Props) {
               </th>
               <th className="px-3 py-2 text-left">Drivlina</th>
               <th className="px-3 py-2 text-left">Säljare</th>
-              <th className="px-3 py-2 text-left">Reg</th>
+              <th className="px-3 py-2 text-center">Länk</th>
             </tr>
           </thead>
           <tbody>
@@ -179,8 +179,15 @@ export default function DataTable({ cars }: Props) {
                 <td className="px-3 py-2 text-xs text-[var(--muted)]">
                   {car.seller === "dealer" ? "Handlare" : "Privat"}
                 </td>
-                <td className="px-3 py-2 font-mono text-xs text-[var(--muted)]">
-                  {car.regNumber}
+                <td className="px-3 py-2 text-center">
+                  <a
+                    href={car.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Blocket
+                  </a>
                 </td>
               </tr>
             ))}
