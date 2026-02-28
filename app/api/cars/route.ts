@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     // Count total
     const countRows = await sql`
-      SELECT COUNT(*) as total FROM cars
+      SELECT COUNT(*) as total FROM cars_enriched
       WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
         AND model_year >= 2005
         AND mileage_mil >= 0
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       SELECT listing_id, url, make, model, model_year, price_sek, mileage_mil,
              fuel_type, horsepower, gearbox, drivetrain, color, seller_type,
              equipment_count, car_age_years
-      FROM cars
+      FROM cars_enriched
       WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
         AND model_year >= 2005
         AND mileage_mil >= 0
