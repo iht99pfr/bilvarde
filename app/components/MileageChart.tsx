@@ -16,27 +16,45 @@ import { getColorsMap } from "@/app/lib/model-config";
 import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface MileagePoint { mileage: number; price: number; }
+interface ScatterPoint { age: number; mileage: number; price: number; year: number; fuel: string; hp: number; seller: string; }
+
 interface Props {
   data: Record<string, MileagePoint[]>;
+  scatter?: Record<string, ScatterPoint[]>;
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
   modelConfig: ModelConfigMap;
+  fuelFilter: string;
 }
 
-function computeTrendLine(points: MileagePoint[], bucketSize: number = 2000) {
+const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
+
+function computeTrendLine(points: { mileage: number; price: number }[], bucketSize: number = 2000) {
   const buckets: Record<number, number[]> = {};
   for (const p of points) {
     const bucket = Math.floor(p.mileage / bucketSize) * bucketSize;
     if (!buckets[bucket]) buckets[bucket] = [];
     buckets[bucket].push(p.price);
   }
-  return Object.entries(buckets)
+  const raw = Object.entries(buckets)
     .map(([m, prices]) => {
       prices.sort((a, b) => a - b);
       return { mileage: Number(m) + bucketSize / 2, median: prices[Math.floor(prices.length / 2)], count: prices.length };
     })
-    .filter((p) => p.count >= 2)
+    .filter((p) => p.count >= 5)
     .sort((a, b) => a.mileage - b.mileage);
+
+  // Enforce monotonic decrease — truncate at first upward spike
+  const result: typeof raw = [];
+  let prevMedian = Infinity;
+  for (const p of raw) {
+    if (p.median <= prevMedian) {
+      result.push(p);
+      prevMedian = p.median;
+    }
+    // Stop at first violation — data beyond is too sparse
+  }
+  return result;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,14 +100,30 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function MileageChart({ data, hiddenModels, onToggleModel, modelConfig }: Props) {
+export default function MileageChart({ data, scatter, hiddenModels, onToggleModel, modelConfig, fuelFilter }: Props) {
   const COLORS = getColorsMap(modelConfig);
+  const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
+  const isFiltered = internalFuel !== "All";
+
+  // When fuel is filtered and we have scatter data, use scatter points filtered by fuel
+  const displayData = useMemo(() => {
+    if (isFiltered && scatter) {
+      const result: Record<string, MileagePoint[]> = {};
+      for (const [model, points] of Object.entries(scatter)) {
+        result[model] = points
+          .filter((p) => p.fuel === internalFuel)
+          .map((p) => ({ mileage: p.mileage, price: p.price }));
+      }
+      return result;
+    }
+    return data;
+  }, [data, scatter, isFiltered, internalFuel]);
 
   const trendLines = useMemo(() => {
     const result: Record<string, { mileage: number; median: number }[]> = {};
-    for (const [model, points] of Object.entries(data)) result[model] = computeTrendLine(points);
+    for (const [model, points] of Object.entries(displayData)) result[model] = computeTrendLine(points);
     return result;
-  }, [data]);
+  }, [displayData]);
 
   const trendData = useMemo(() => {
     const allMileages = new Set<number>();
@@ -104,7 +138,7 @@ export default function MileageChart({ data, hiddenModels, onToggleModel, modelC
     });
   }, [trendLines]);
 
-  const models = Object.keys(data);
+  const models = Object.keys(displayData);
 
   return (
     <ResponsiveContainer width="100%" height={450}>
@@ -127,7 +161,7 @@ export default function MileageChart({ data, hiddenModels, onToggleModel, modelC
           hiddenModels.has(model)
             ? <Scatter key={model} name={model} data={[]} dataKey="price"
                 fill={COLORS[model]} opacity={0.5} r={3} legendType="circle" />
-            : <Scatter key={model} name={model} data={data[model]} dataKey="price"
+            : <Scatter key={model} name={model} data={displayData[model]} dataKey="price"
                 fill={COLORS[model]} opacity={0.5} r={3} legendType="circle" />
         ))}
         {Object.keys(trendLines).map((model) => (

@@ -25,6 +25,7 @@ interface Props {
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
   modelConfig: ModelConfigMap;
+  fuelFilter: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,34 +71,80 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-export default function RetentionChart({ retention, predictionCurves, hiddenModels, onToggleModel, modelConfig }: Props) {
+const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
+
+export default function RetentionChart({ retention, predictionCurves, hiddenModels, onToggleModel, modelConfig, fuelFilter }: Props) {
   const COLORS = getColorsMap(modelConfig);
   const hasPredictions = predictionCurves && Object.keys(predictionCurves).length > 0;
+  const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
+  const curveKey = internalFuel === "All" ? "all" : internalFuel;
+
+  // When a specific fuel is selected, derive retention from prediction curves
+  const useFuelCurves = curveKey !== "all" && hasPredictions;
 
   const allAges = new Set<number>();
-  Object.values(retention).forEach((r) => r.points.forEach((p) => allAges.add(p.age)));
+  if (useFuelCurves) {
+    // Collect ages from per-fuel prediction curves
+    for (const model of Object.keys(retention)) {
+      const curve = predictionCurves![model]?.[curveKey];
+      if (curve) curve.forEach((p) => allAges.add(p.age));
+    }
+  } else {
+    Object.values(retention).forEach((r) => r.points.forEach((p) => allAges.add(p.age)));
+  }
   const sortedAges = [...allAges].sort((a, b) => a - b).filter((a) => a <= 15);
 
   const data = sortedAges.map((age) => {
     const point: Record<string, number | number[]> = { age };
     for (const [model, r] of Object.entries(retention)) {
-      const match = r.points.find((p) => p.age === age);
-      if (match) point[model] = Math.min(match.retention, 100);
-      if (hasPredictions) {
-        const curve = predictionCurves[model]?.["all"];
-        const predMatch = curve?.find((p) => p.age === age);
-        if (predMatch && r.newPrice > 0) {
-          point[`${model}_range`] = [
-            Math.round(Math.max(0, (predMatch.lower / r.newPrice) * 100) * 10) / 10,
-            Math.round(Math.min(100, (predMatch.upper / r.newPrice) * 100) * 10) / 10,
-          ];
+      if (useFuelCurves) {
+        // Derive retention from fuel-specific prediction curve
+        const curve = predictionCurves![model]?.[curveKey];
+        if (curve) {
+          const basePoint = curve.find((p) => p.age === 0) || curve[0];
+          const agePoint = curve.find((p) => p.age === age);
+          if (basePoint && agePoint && basePoint.predicted > 0) {
+            const retPct = Math.min(100, (agePoint.predicted / basePoint.predicted) * 100);
+            point[model] = Math.round(retPct * 10) / 10;
+            point[`${model}_range`] = [
+              Math.round(Math.max(0, (agePoint.lower / basePoint.predicted) * 100) * 10) / 10,
+              Math.round(Math.min(100, (agePoint.upper / basePoint.predicted) * 100) * 10) / 10,
+            ];
+          }
+        }
+      } else {
+        const match = r.points.find((p) => p.age === age);
+        if (match) point[model] = Math.min(match.retention, 100);
+        if (hasPredictions) {
+          const curve = predictionCurves![model]?.["all"];
+          const predMatch = curve?.find((p) => p.age === age);
+          if (predMatch && r.newPrice > 0) {
+            point[`${model}_range`] = [
+              Math.round(Math.max(0, (predMatch.lower / r.newPrice) * 100) * 10) / 10,
+              Math.round(Math.min(100, (predMatch.upper / r.newPrice) * 100) * 10) / 10,
+            ];
+          }
         }
       }
     }
     return point;
   });
 
+  // Enforce monotonic decrease on retention values
   const models = Object.keys(retention);
+  for (const model of models) {
+    let prevVal = 101;
+    for (const point of data) {
+      const val = point[model];
+      if (typeof val === "number") {
+        if (val > prevVal) {
+          point[model] = prevVal;
+        } else {
+          prevVal = val;
+        }
+      }
+    }
+  }
 
   return (
     <ResponsiveContainer width="100%" height={450}>

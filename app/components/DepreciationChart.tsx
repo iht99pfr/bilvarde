@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import {
   ScatterChart,
   Scatter,
@@ -47,6 +47,7 @@ interface Props {
   hiddenModels: Set<string>;
   onToggleModel: (model: string) => void;
   modelConfig: ModelConfigMap;
+  fuelFilter: string;
 }
 
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterPoint }> }) {
@@ -105,12 +106,10 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
 const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
 
-export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel, modelConfig }: Props) {
+export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel, modelConfig, fuelFilter }: Props) {
   const COLORS = getColorsMap(modelConfig);
-  const [fuelFilter, setFuelFilter] = useState<string>("Alla");
 
   const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
 
@@ -163,26 +162,25 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
     modelsWithCurve.push(...models);
   }
 
+  // Enforce monotonic decrease on prediction trend data
+  for (const model of modelsWithCurve) {
+    let prevVal = Infinity;
+    for (const point of trendData) {
+      const val = point[model];
+      if (typeof val === "number") {
+        if (val > prevVal) {
+          point[model] = prevVal;
+        } else {
+          prevVal = val;
+        }
+      }
+    }
+  }
+
   const visibleModelsWithCurve = modelsWithCurve.filter((m) => !hiddenModels.has(m));
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {FUEL_FILTERS.map((fuel) => (
-          <button
-            key={fuel}
-            onClick={() => setFuelFilter(fuel)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition ${
-              fuelFilter === fuel
-                ? "bg-[var(--foreground)] text-white"
-                : "bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--muted)]"
-            }`}
-          >
-            {fuel === "Alla" ? "Alla bränslen" : fuel}
-          </button>
-        ))}
-      </div>
-
       <ResponsiveContainer width="100%" height={500}>
         <ScatterChart margin={{ top: 10, right: 20, bottom: 40, left: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

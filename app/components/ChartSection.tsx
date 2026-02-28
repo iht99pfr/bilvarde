@@ -6,9 +6,12 @@ import DepreciationChart from "./DepreciationChart";
 import RetentionChart from "./RetentionChart";
 import MileageChart from "./MileageChart";
 
+const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
+
 export default function ChartSection() {
   const { selectedModels, modelConfig } = useModelSelection();
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+  const [fuelFilter, setFuelFilter] = useState<string>("Alla");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aggregates, setAggregates] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,13 +84,30 @@ export default function ChartSection() {
 
   return (
     <>
+      {/* Shared fuel filter */}
+      <div className="flex flex-wrap gap-2 mb-2">
+        {FUEL_FILTERS.map((fuel) => (
+          <button
+            key={fuel}
+            onClick={() => setFuelFilter(fuel)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition ${
+              fuelFilter === fuel
+                ? "bg-[var(--foreground)] text-white"
+                : "bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--muted)]"
+            }`}
+          >
+            {fuel === "Alla" ? "Alla bränslen" : fuel}
+          </button>
+        ))}
+      </div>
+
       {/* Depreciation by Age */}
       <section id="depreciation" className="space-y-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Pris per ålder</h2>
           <p className="text-[var(--muted)] text-sm mt-1">
             Varje punkt är en verklig annons. Trendlinjer visar predikterat pris
-            med 95% konfidensband. Filtrera på bränsletyp för att jämföra.
+            med 95% konfidensband.
           </p>
         </div>
         <DepreciationChart
@@ -97,6 +117,7 @@ export default function ChartSection() {
           modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
+          fuelFilter={fuelFilter}
         />
       </section>
 
@@ -115,6 +136,7 @@ export default function ChartSection() {
           modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
+          fuelFilter={fuelFilter}
         />
       </section>
 
@@ -128,9 +150,11 @@ export default function ChartSection() {
         </div>
         <MileageChart
           data={filteredAggregates.mileageCost}
+          scatter={filteredScatter}
           modelConfig={modelConfig}
           hiddenModels={hiddenModels}
           onToggleModel={toggleModel}
+          fuelFilter={fuelFilter}
         />
       </section>
     </>
