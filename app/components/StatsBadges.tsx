@@ -13,6 +13,7 @@ interface RegressionStats {
 interface Props {
   regression: Record<string, RegressionStats>;
   modelConfig: ModelConfigMap;
+  selectedModels: Set<string>;
 }
 
 function qualityColor(r2: number) {
@@ -27,10 +28,11 @@ function qualityLabel(r2: number) {
   return "Måttlig";
 }
 
-export default function StatsBadges({ regression, modelConfig }: Props) {
+export default function StatsBadges({ regression, modelConfig, selectedModels }: Props) {
+  const filtered = Object.entries(regression).filter(([model]) => selectedModels.has(model));
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {Object.entries(regression).map(([model, stats]) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {filtered.map(([model, stats]) => {
         const meta = getModelMeta(modelConfig, model);
         return (
           <div

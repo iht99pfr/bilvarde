@@ -16,12 +16,15 @@ interface ModelSummary {
 interface Props {
   summary: Record<string, ModelSummary>;
   modelConfig: ModelConfigMap;
+  selectedModels: Set<string>;
 }
 
-export default function StatsCards({ summary, modelConfig }: Props) {
+export default function StatsCards({ summary, modelConfig, selectedModels }: Props) {
+  const filtered = Object.entries(summary).filter(([model]) => selectedModels.has(model));
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {Object.entries(summary).map(([model, stats]) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {filtered.map(([model, stats]) => {
         const meta = getModelMeta(modelConfig, model);
         return (
           <div

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Hela Notan — Vad kostar det egentligen?",
   description:
-    "Se hela kostnaden för att äga en bil. Jämför värdeminskning, försäkring, skatt och service för RAV4, XC60 och X3 baserat på riktiga Blocket-annonser.",
+    "Se hela kostnaden för att äga en bil. Jämför värdeminskning, försäkring, skatt och service för populära bilmodeller baserat på riktiga Blocket-annonser.",
 };
 
 export default function RootLayout({
@@ -43,10 +43,7 @@ export default function RootLayout({
               <a href="#tco" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
                 Ägandekostnad
               </a>
-              <a href="#factors" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
-                Insikter
-              </a>
-              <a href="#explorer" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+<a href="#explorer" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
                 Alla bilar
               </a>
             </div>
