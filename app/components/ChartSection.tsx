@@ -6,7 +6,7 @@ import DepreciationChart from "./DepreciationChart";
 import RetentionChart from "./RetentionChart";
 import MileageChart from "./MileageChart";
 
-const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
+const FUEL_FILTERS = ["Alla", "Hybrid", "Laddhybrid", "Diesel", "Bensin"] as const;
 
 export default function ChartSection() {
   const { selectedModels, modelConfig, fuelFilter, setFuelFilter } = useModelSelection();
@@ -158,7 +158,7 @@ export default function ChartSection() {
                 const c = reg.coefficients;
                 let coeff = c.mileage_mil || 0;
                 // Add fuel interaction term based on current filter
-                const fuelMap: Record<string, string> = { PHEV: "mileage_x_phev", El: "mileage_x_electric" };
+                const fuelMap: Record<string, string> = { Laddhybrid: "mileage_x_phev", El: "mileage_x_electric" };
                 const interKey = fuelMap[fuelFilter];
                 if (interKey && c[interKey]) coeff += c[interKey];
                 const pctPer1000 = (1 - Math.exp(coeff * 1000)) * 100;

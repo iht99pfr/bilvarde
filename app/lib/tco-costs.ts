@@ -75,7 +75,7 @@ const COST_PROFILES: Record<string, ModelCostProfile> = {
     service: TOYOTA_SERVICE,
     repair: TOYOTA_REPAIR,
     insurance: INS_MID_SUV,
-    tax: { Hybrid: 1200, Petrol: 2500 },
+    tax: { Hybrid: 1200, PHEV: 360, Petrol: 2500 },
   },
   XC60: {
     service: VOLVO_SERVICE,
@@ -182,6 +182,7 @@ const PHEV_ELECTRIC_SHARE = 0.50;
 const FUEL_PROFILES: Record<string, Record<string, FuelProfile>> = {
   RAV4: {
     Hybrid:  { fuelL100km: 5.5, electricShare: 0, fuelType: "petrol" },
+    PHEV:    { fuelL100km: 6.0, elKWh100km: 18, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
     Petrol:  { fuelL100km: 8.0, electricShare: 0, fuelType: "petrol" },
   },
   XC60: {

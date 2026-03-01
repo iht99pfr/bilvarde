@@ -141,7 +141,7 @@ function renderLegend(hiddenModels: Set<string>, onToggle: (model: string) => vo
   };
 }
 
-const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
+const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol", Laddhybrid: "PHEV" };
 
 export default function DepreciationChart({ scatter, medians, predictionCurves, hiddenModels, onToggleModel, modelConfig, fuelFilter }: Props) {
   const COLORS = getColorsMap(modelConfig);

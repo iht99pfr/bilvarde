@@ -8,7 +8,7 @@ import type { SortKey } from "./DataTable";
 const FUEL_KEY_MAP: Record<string, string> = {
   Bensin: "Petrol",
   Hybrid: "Hybrid",
-  PHEV: "PHEV",
+  Laddhybrid: "PHEV",
   Diesel: "Diesel",
   El: "Electric",
 };

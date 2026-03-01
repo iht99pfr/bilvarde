@@ -27,7 +27,7 @@ interface Props {
   fuelFilter: string;
 }
 
-const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol" };
+const FUEL_MAP: Record<string, string> = { Alla: "All", Bensin: "Petrol", Laddhybrid: "PHEV" };
 
 function computeTrendLine(points: { mileage: number; price: number }[], bucketSize: number = 2000) {
   const buckets: Record<number, number[]> = {};

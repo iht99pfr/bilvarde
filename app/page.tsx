@@ -45,7 +45,7 @@ export default function Home() {
           <p>
             Värdeminskning modelleras med log-transformerad multivariat regression med 15
             variabler: bilålder, miltal, hästkrafter, utrustningsantal, bränsletyp
-            (Hybrid/PHEV/Diesel/El), säljartyp, drivlina, WLTP-räckvidd samt
+            (Hybrid/Laddhybrid/Diesel/El), säljartyp, drivlina, WLTP-räckvidd samt
             interaktionstermer mellan bränsletyp och ålder/miltal. Log-transformen
             ger en naturlig exponentiell avskrivningskurva där nya bilar tappar mer
             i värde än äldre.

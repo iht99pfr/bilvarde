@@ -35,7 +35,7 @@ export type SortKey = "price" | "year" | "mileage" | "hp" | "deal";
 
 const FUEL_LABELS: Record<string, string> = {
   Hybrid: "Hybrid",
-  PHEV: "PHEV",
+  PHEV: "Laddhybrid",
   Diesel: "Diesel",
   Petrol: "Bensin",
   Electric: "El",
