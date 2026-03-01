@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 interface RegressionModel {
   intercept: number;
   coefficients: Record<string, number>;
-  residual_se: number;
+  residual_se_log: number;
+  log_transform: boolean;
   medianHp: number;
   medianEquipment: number;
   typicalAwd: number;
@@ -39,6 +40,10 @@ function predictPrice(reg: RegressionModel, age: number, mileage: number, fuel: 
   let predicted = reg.intercept;
   for (const [key, coef] of Object.entries(reg.coefficients)) {
     predicted += coef * (features[key] || 0);
+  }
+  // Log-transform: coefficients predict log(price), so exponentiate
+  if (reg.log_transform) {
+    predicted = Math.exp(predicted);
   }
   return Math.max(0, Math.round(predicted));
 }
@@ -175,10 +180,11 @@ export async function GET(req: NextRequest) {
       if (reg) {
         predicted = predictPrice(reg, age, mileage, fuel, hp, equipmentCount, isDealer, isAwd);
         residual = price - predicted;
-        if (residual < -1.5 * reg.residual_se) {
-          deal = "great";
-        } else if (residual < -0.75 * reg.residual_se) {
-          deal = "good";
+        // Deal scoring in log-space: compare log(actual) vs log(predicted)
+        if (reg.log_transform && predicted > 0 && price > 0) {
+          const logScore = (Math.log(price) - Math.log(predicted)) / reg.residual_se_log;
+          if (logScore <= -1.5) deal = "great";
+          else if (logScore <= -0.75) deal = "good";
         }
       }
 
