@@ -9,7 +9,8 @@ interface RegressionModel {
   coefficients: Record<string, number>;
   r2: number;
   rmse: number;
-  residual_se: number;
+  residual_se_log: number;
+  log_transform: boolean;
   n_samples: number;
   features: string[];
   medianHp: number;
@@ -155,6 +156,10 @@ function computeTco(
       };
       sellPred += coef * (sellFeatures[key] || 0);
     }
+    if (reg.log_transform) {
+      buyPred = Math.exp(buyPred);
+      sellPred = Math.exp(sellPred);
+    }
     buyPrice = Math.max(0, Math.round(buyPred));
     sellPrice = Math.max(0, Math.round(sellPred));
   }
@@ -177,7 +182,7 @@ function computeTco(
     monthlyDepreciation: Math.round(valueLoss / months),
     annualDepreciation: Math.round(valueLoss / scenario.holdingYears),
     costPerMil: totalMilesDriven > 0 ? Math.round(totalCost / totalMilesDriven) : 0,
-    confidence: reg.residual_se,
+    confidence: reg.residual_se_log,
     totalCostWithFixed: totalCost,
     monthlyTotal: Math.round(totalCost / months),
     insuranceTotal,
@@ -379,7 +384,7 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
               </div>
             </div>
             <p className="text-xs text-[var(--muted)]">
-              ±{(result.confidence * 1.96 / 1000).toFixed(0)}k kr prediktionsosäkerhet (95% KI)
+              ±{((Math.exp(1.96 * result.confidence) - 1) * 100).toFixed(0)}% prediktionsosäkerhet (95% KI)
             </p>
           </div>
         )}

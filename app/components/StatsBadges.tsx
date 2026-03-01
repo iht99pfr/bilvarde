@@ -6,7 +6,8 @@ import type { ModelConfigMap } from "@/app/lib/model-config";
 interface RegressionStats {
   r2: number;
   rmse: number;
-  residual_se: number;
+  residual_se_log: number;
+  log_transform: boolean;
   n_samples: number;
 }
 
@@ -57,7 +58,7 @@ export default function StatsBadges({ regression, modelConfig, selectedModels }:
             </div>
             <p className="mt-1.5 text-xs text-[var(--muted)]">
               Modellen förklarar {(stats.r2 * 100).toFixed(1)}% av prisvariationen.
-              Typiskt prediktionsfel: ±{(stats.residual_se * 1.96 / 1000).toFixed(0)}k kr (95% KI).
+              Typiskt prediktionsfel: ±{((Math.exp(1.96 * stats.residual_se_log) - 1) * 100).toFixed(0)}% (95% KI).
             </p>
           </div>
         );
