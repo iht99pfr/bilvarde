@@ -176,7 +176,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
         curve.forEach((p) => allAges.add(p.age));
       }
     }
-    trendData = [...allAges].sort((a, b) => a - b).filter(a => a <= 20).map((age) => {
+    trendData = [...allAges].sort((a, b) => a - b).filter(a => a <= 15).map((age) => {
       const point: Record<string, number | number[]> = { age };
       for (const model of modelsWithCurve) {
         const curve = predictionCurves[model]?.[curveKey];
@@ -226,7 +226,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="age" type="number" name="Age"
             label={{ value: "Bilens ålder (år)", position: "bottom", fill: "var(--muted)", offset: 15 }}
-            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, "auto"]} />
+            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, 15]} />
           <YAxis dataKey="price" type="number" name="Price"
             label={{ value: "Pris (kr)", angle: -90, position: "insideLeft", fill: "var(--muted)", offset: 10 }}
             tick={{ fill: "var(--muted)", fontSize: 12 }}
