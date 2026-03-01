@@ -226,7 +226,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="age" type="number" name="Age"
             label={{ value: "Bilens ålder (år)", position: "bottom", fill: "var(--muted)", offset: 15 }}
-            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, 15]} />
+            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, 15]} allowDataOverflow />
           <YAxis dataKey="price" type="number" name="Price"
             label={{ value: "Pris (kr)", angle: -90, position: "insideLeft", fill: "var(--muted)", offset: 10 }}
             tick={{ fill: "var(--muted)", fontSize: 12 }}
