@@ -232,12 +232,15 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
           <div>
             <label className="text-xs text-[var(--muted)] block mb-1">Nuvarande miltal</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={scenario.mileage}
-              onChange={(e) => update({ mileage: Number(e.target.value) || 0 })}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                update({ mileage: Number(v) });
+              }}
               className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm font-mono text-[var(--foreground)]"
-              step={500}
-              min={0}
             />
             {scatterCount > 0 && (
               <p className="text-[10px] text-[var(--muted)] mt-0.5">
@@ -260,12 +263,15 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
           <div>
             <label className="text-xs text-[var(--muted)] block mb-1">Årlig körning (mil/år)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={scenario.annualMileage}
-              onChange={(e) => update({ annualMileage: Number(e.target.value) || 0 })}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "");
+                update({ annualMileage: Number(v) });
+              }}
               className="w-full bg-white border border-[var(--border)] px-3 py-2 text-sm font-mono text-[var(--foreground)]"
-              step={100}
-              min={0}
             />
           </div>
         </div>
