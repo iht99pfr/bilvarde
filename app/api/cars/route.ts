@@ -11,7 +11,13 @@ interface RegressionModel {
   medianHp: number;
   medianEquipment: number;
   typicalAwd: number;
+  generations: string[];
 }
+
+const PREMIUM_EQUIPMENT = new Set([
+  "panorama_roof", "ventilated_seats", "heads_up_display", "jbl", "leather_seats",
+  "harman_kardon", "bowers_wilkins", "air_suspension", "massage_seats",
+]);
 
 function cleanFuel(raw: string): string {
   const f = (raw || "").toLowerCase();
@@ -23,18 +29,43 @@ function cleanFuel(raw: string): string {
   return "Other";
 }
 
-function predictPrice(reg: RegressionModel, age: number, mileage: number, fuel: string, hp: number, equipmentCount: number, isDealer: boolean, isAwd: boolean): number {
+function predictPrice(
+  reg: RegressionModel, age: number, mileage: number, fuel: string,
+  hp: number, equipmentCount: number, isDealer: boolean, isAwd: boolean,
+  wltpRange: number, generation: string, premiumEquipCount: number,
+  modelGenerations: string[],
+): number {
+  const isElectric = fuel === "Electric" ? 1 : 0;
+  const isPhev = fuel === "PHEV" ? 1 : 0;
+
+  // Classify generation: newest = reference, oldest = is_oldest_gen, middle = is_middle_gen
+  let isOldestGen = 0;
+  let isMiddleGen = 0;
+  if (generation && modelGenerations.length >= 2) {
+    const sorted = [...modelGenerations].sort();
+    if (generation === sorted[0]) isOldestGen = 1;
+    else if (sorted.length >= 3 && generation === sorted[1]) isMiddleGen = 1;
+  }
+
   const features: Record<string, number> = {
     car_age_years: age,
     mileage_mil: mileage,
     horsepower: hp || reg.medianHp,
     equipment_count: equipmentCount || reg.medianEquipment,
     is_hybrid: fuel === "Hybrid" ? 1 : 0,
-    is_phev: fuel === "PHEV" ? 1 : 0,
+    is_phev: isPhev,
     is_diesel: fuel === "Diesel" ? 1 : 0,
-    is_electric: fuel === "Electric" ? 1 : 0,
+    is_electric: isElectric,
     is_dealer: isDealer ? 1 : 0,
     is_awd: isAwd ? 1 : 0,
+    wltp_range_km: wltpRange || 0,
+    age_x_electric: age * isElectric,
+    mileage_x_electric: mileage * isElectric,
+    age_x_phev: age * isPhev,
+    mileage_x_phev: mileage * isPhev,
+    is_oldest_gen: isOldestGen,
+    is_middle_gen: isMiddleGen,
+    premium_equip_count: premiumEquipCount,
   };
 
   let predicted = reg.intercept;
@@ -106,7 +137,7 @@ export async function GET(req: NextRequest) {
       rows = await sql`
         SELECT listing_id, url, make, model, model_key, model_year, price_sek, mileage_mil,
                fuel_type, horsepower, gearbox, drivetrain, color, seller_type,
-               equipment_count, car_age_years
+               equipment_count, car_age_years, wltp_range_km, ai_generation, ai_notable_equipment
         FROM cars_enriched
         WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
           AND model_year >= 2005
@@ -125,7 +156,7 @@ export async function GET(req: NextRequest) {
       rows = await sql`
         SELECT listing_id, url, make, model, model_key, model_year, price_sek, mileage_mil,
                fuel_type, horsepower, gearbox, drivetrain, color, seller_type,
-               equipment_count, car_age_years
+               equipment_count, car_age_years, wltp_range_km, ai_generation, ai_notable_equipment
         FROM cars_enriched
         WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
           AND model_year >= 2005
@@ -171,6 +202,14 @@ export async function GET(req: NextRequest) {
       const isDealer = (r.seller_type || "").toLowerCase() === "dealer";
       const drivetrain = r.drivetrain || "";
       const isAwd = drivetrain.toLowerCase().includes("awd") || drivetrain.toLowerCase().includes("4wd") || drivetrain.toLowerCase().includes("fyrhjuls");
+      const wltpRange = r.wltp_range_km || 0;
+      const generation = r.ai_generation || "";
+      // Count premium equipment from AI-extracted list
+      let premiumEquipCount = 0;
+      if (r.ai_notable_equipment) {
+        const equip = Array.isArray(r.ai_notable_equipment) ? r.ai_notable_equipment : [];
+        premiumEquipCount = equip.filter((e: string) => PREMIUM_EQUIPMENT.has(e)).length;
+      }
 
       const reg = regression[modelKey];
       let predicted: number | null = null;
@@ -178,7 +217,10 @@ export async function GET(req: NextRequest) {
       let deal: string | null = null;
 
       if (reg) {
-        predicted = predictPrice(reg, age, mileage, fuel, hp, equipmentCount, isDealer, isAwd);
+        predicted = predictPrice(
+          reg, age, mileage, fuel, hp, equipmentCount, isDealer, isAwd,
+          wltpRange, generation, premiumEquipCount, reg.generations || [],
+        );
         residual = price - predicted;
         // Deal scoring in log-space: compare log(actual) vs log(predicted)
         if (reg.log_transform && predicted > 0 && price > 0) {
