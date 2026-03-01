@@ -147,6 +147,43 @@ export default function ChartSection() {
             Hur miltal korrelerar med begärt pris för respektive modell.
           </p>
         </div>
+        {/* Mileage cost badges per model */}
+        {filteredAggregates.regression && (
+          <div className="flex flex-wrap gap-3">
+            {Object.keys(filteredAggregates.regression)
+              .filter((m) => selectedModels.has(m) && !hiddenModels.has(m))
+              .map((model) => {
+                const reg = filteredAggregates.regression[model];
+                if (!reg?.coefficients) return null;
+                const c = reg.coefficients;
+                let coeff = c.mileage_mil || 0;
+                // Add fuel interaction term based on current filter
+                const fuelMap: Record<string, string> = { PHEV: "mileage_x_phev", El: "mileage_x_electric" };
+                const interKey = fuelMap[fuelFilter];
+                if (interKey && c[interKey]) coeff += c[interKey];
+                const pctPer1000 = (1 - Math.exp(coeff * 1000)) * 100;
+                const cfg = modelConfig[model];
+                const label = cfg?.label?.split(" ").pop() || model;
+                return (
+                  <div
+                    key={model}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm"
+                    style={{ borderColor: cfg?.color || "#888" }}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: cfg?.color || "#888" }}
+                    />
+                    <span className="text-[var(--muted)]">{label}</span>
+                    <span className="font-mono font-semibold text-[var(--foreground)]">
+                      −{pctPer1000.toFixed(1)}%
+                    </span>
+                    <span className="text-[var(--muted)] text-xs">per 1 000 mil</span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
         <MileageChart
           data={filteredAggregates.mileageCost}
           scatter={filteredScatter}
