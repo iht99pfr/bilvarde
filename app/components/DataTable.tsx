@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ModelConfigMap } from "@/app/lib/model-config";
 
 interface Car {
   id: string;
@@ -23,7 +22,7 @@ interface Car {
 
 interface Props {
   cars: Car[];
-  modelConfig: ModelConfigMap;
+  total: number;
 }
 
 type SortKey = "price" | "year" | "mileage" | "hp";
@@ -36,26 +35,18 @@ const FUEL_LABELS: Record<string, string> = {
   Electric: "El",
 };
 
-export default function DataTable({ cars, modelConfig }: Props) {
+export default function DataTable({ cars, total }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [filterModel, setFilterModel] = useState<string>("all");
-  const [filterFuel, setFilterFuel] = useState<string>("all");
 
-  const filtered = useMemo(() => {
-    let result = [...cars];
-    if (filterModel !== "all") {
-      result = result.filter((c) => c.modelKey === filterModel);
-    }
-    if (filterFuel !== "all") {
-      result = result.filter((c) => c.fuel === filterFuel);
-    }
+  const sorted = useMemo(() => {
+    const result = [...cars];
     result.sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
       return (a[sortKey] - b[sortKey]) * mul;
     });
     return result;
-  }, [cars, sortKey, sortDir, filterModel, filterFuel]);
+  }, [cars, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -71,35 +62,11 @@ export default function DataTable({ cars, modelConfig }: Props) {
     return <span className="text-[var(--foreground)] ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
   };
 
-  const fuels = [...new Set(cars.map((c) => c.fuel))].sort();
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
-        <select
-          value={filterModel}
-          onChange={(e) => setFilterModel(e.target.value)}
-          className="bg-[var(--card)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
-        >
-          <option value="all">Alla modeller</option>
-          {Object.entries(modelConfig).map(([key, meta]) => (
-            <option key={key} value={key}>{meta.label}</option>
-          ))}
-        </select>
-        <select
-          value={filterFuel}
-          onChange={(e) => setFilterFuel(e.target.value)}
-          className="bg-[var(--card)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
-        >
-          <option value="all">Alla bränslen</option>
-          {fuels.map((f) => (
-            <option key={f} value={f}>
-              {FUEL_LABELS[f] || f}
-            </option>
-          ))}
-        </select>
         <span className="text-[var(--muted)] text-sm self-center">
-          {filtered.length} bilar
+          {total.toLocaleString("sv-SE")} bilar
         </span>
       </div>
       <div className="overflow-x-auto border border-[var(--border)]">
@@ -138,7 +105,7 @@ export default function DataTable({ cars, modelConfig }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filtered.slice(0, 100).map((car) => (
+            {sorted.map((car) => (
               <tr
                 key={car.id}
                 className="border-t border-[var(--border)] hover:bg-[var(--card)]/50 transition"

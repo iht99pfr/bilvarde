@@ -9,6 +9,8 @@ interface ModelSelectionContextType {
   availableModels: string[];
   modelConfig: ModelConfigMap;
   loading: boolean;
+  fuelFilter: string;
+  setFuelFilter: (fuel: string) => void;
 }
 
 const ModelSelectionCtx = createContext<ModelSelectionContextType>({
@@ -17,6 +19,8 @@ const ModelSelectionCtx = createContext<ModelSelectionContextType>({
   availableModels: [],
   modelConfig: {},
   loading: true,
+  fuelFilter: "Alla",
+  setFuelFilter: () => {},
 });
 
 export function useModelSelection() {
@@ -49,6 +53,7 @@ export function ModelSelectionProvider({ children }: { children: ReactNode }) {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set(DEFAULT_MODELS));
   const [loading, setLoading] = useState(true);
+  const [fuelFilter, setFuelFilter] = useState("Alla");
 
   useEffect(() => {
     fetch("/api/aggregates")
@@ -87,7 +92,7 @@ export function ModelSelectionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ModelSelectionCtx.Provider value={{ selectedModels, toggleModel, availableModels, modelConfig, loading }}>
+    <ModelSelectionCtx.Provider value={{ selectedModels, toggleModel, availableModels, modelConfig, loading, fuelFilter, setFuelFilter }}>
       {children}
     </ModelSelectionCtx.Provider>
   );

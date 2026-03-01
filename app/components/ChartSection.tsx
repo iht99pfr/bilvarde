@@ -9,9 +9,8 @@ import MileageChart from "./MileageChart";
 const FUEL_FILTERS = ["Alla", "Hybrid", "PHEV", "Diesel", "Bensin"] as const;
 
 export default function ChartSection() {
-  const { selectedModels, modelConfig } = useModelSelection();
+  const { selectedModels, modelConfig, fuelFilter, setFuelFilter } = useModelSelection();
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
-  const [fuelFilter, setFuelFilter] = useState<string>("Alla");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aggregates, setAggregates] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

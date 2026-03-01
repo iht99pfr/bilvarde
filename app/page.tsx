@@ -40,10 +40,9 @@ export default function Home() {
         {/* Data Explorer */}
         <section id="explorer" className="space-y-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Alla bilar</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Annonser</h2>
             <p className="text-[var(--muted)] text-sm mt-1">
-              Bläddra bland alla insamlade annonser. Sortera på valfri
-              kolumn eller filtrera på modell och bränsletyp.
+              Visar annonser för valda modeller och bränsletyp.
             </p>
           </div>
           <DataTableSection />

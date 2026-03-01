@@ -1,8 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useModelSelection } from "./ModelSelectionContext";
 import DataTable from "./DataTable";
-import type { ModelConfigMap } from "@/app/lib/model-config";
+
+const FUEL_KEY_MAP: Record<string, string> = {
+  Bensin: "Petrol",
+  Hybrid: "Hybrid",
+  PHEV: "PHEV",
+  Diesel: "Diesel",
+  El: "Electric",
+};
 
 interface CarsResponse {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,23 +21,33 @@ interface CarsResponse {
 }
 
 export default function DataTableSection() {
+  const { selectedModels, fuelFilter } = useModelSelection();
   const [data, setData] = useState<CarsResponse | null>(null);
-  const [modelConfig, setModelConfig] = useState<ModelConfigMap>({});
   const [page, setPage] = useState(1);
   const limit = 30;
 
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    const models = [...selectedModels].join(",");
+    if (models) params.set("models", models);
+    const fuelKey = FUEL_KEY_MAP[fuelFilter];
+    if (fuelKey) params.set("fuel", fuelKey);
+    return params.toString();
+  }, [page, selectedModels, fuelFilter]);
+
+  // Reset to page 1 when filters change
   useEffect(() => {
-    fetch("/api/aggregates")
-      .then((r) => r.json())
-      .then((agg) => setModelConfig(agg.modelConfig || {}));
-  }, []);
+    setPage(1);
+  }, [selectedModels, fuelFilter]);
 
   useEffect(() => {
     setData(null);
-    fetch(`/api/cars?page=${page}&limit=${limit}`)
+    fetch(`/api/cars?${queryString}`)
       .then((r) => r.json())
       .then(setData);
-  }, [page]);
+  }, [queryString]);
 
   if (!data) {
     return (
@@ -43,7 +61,7 @@ export default function DataTableSection() {
 
   return (
     <div className="space-y-4">
-      <DataTable cars={data.cars} modelConfig={modelConfig} />
+      <DataTable cars={data.cars} total={data.total} />
 
       {/* Pagination */}
       {data.pages > 1 && (
