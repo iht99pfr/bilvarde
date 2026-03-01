@@ -42,10 +42,9 @@ app/
 │   ├── MileageChart.tsx       — mileage vs price scatter + trend line
 │   ├── ModelSelector.tsx      — pill-based model toggle (persisted to localStorage)
 │   ├── ModelSelectionContext.tsx — React context for selected models
-│   ├── TcoCalculator.tsx      — ownership cost calculator (uses regression coefficients)
-│   ├── TcoSection.tsx         — TCO section wrapper
+│   ├── TcoCalculator.tsx      — ownership cost calculator (single scenario, auto-mileage from scatter data)
 │   ├── DataTable.tsx          — sortable/filterable car listings table with deal badges
-│   ├── DataTableSection.tsx   — data table section wrapper, manages sort state
+│   ├── DataTableSection.tsx   — data table section wrapper, manages sort + deal filter state
 │   ├── HeroSection.tsx        — hero with dynamic text based on selected models
 │   ├── StatsSection.tsx       — per-model stat cards
 │   ├── StatsCards.tsx         — individual stat card component
@@ -54,6 +53,8 @@ app/
 │   ├── db.ts                  — Neon Postgres connection
 │   └── model-config.ts       — model metadata types and helpers
 ├── layout.tsx                 — root layout with nav
+├── tco/
+│   └── page.tsx               — TCO calculator page (separate route)
 ├── page.tsx                   — main page composing all sections
 └── globals.css                — Tailwind base styles
 ```
@@ -123,9 +124,9 @@ Fuel key mapping (Swedish UI → backend keys):
 
 **Solution**: Two-part integration:
 
-- **DepreciationChart**: Scatter dots are color-coded — dark green (white ring) = "Fyndpris" (great deal, >1.5 SE below predicted, ~7% of cars), lighter green = "Bra pris" (good deal, >0.75 SE, ~23%). Tooltip shows predicted price and savings. Deal dots render on top via SVG paint order. Legend added below chart.
-- **DataTable + DataTableSection**: New "Fynd" column with green badges showing savings (e.g. "−171 504 kr"). Green row tinting for deal cars. Sort state lifted to DataTableSection; clicking "Fynd" header triggers server-side deal sort.
-- **`/api/cars`**: Computes deal scores server-side using regression coefficients from `web_cache.aggregates.regressionModels` (same `predictPrice()` math as TcoCalculator). Each car gets `predicted`, `residual`, and `deal` fields. When `sort=deal`, fetches ALL matching rows, computes deals globally, sorts by deal rank + residual, then paginates in memory. Regression models cached 5 min.
+- **DepreciationChart**: Scatter dots are color-coded — dark green (white ring) = "Fyndpris" (great deal, >1.5 SE below predicted, ~7% of cars), lighter green = "Bra pris" (good deal, >0.75 SE, ~23%). Tooltip shows predicted price and savings. Deal dots render on top via SVG paint order. Legend sits below the scatter chart (above the trend chart).
+- **DataTable + DataTableSection**: New "Fynd" column with green badges showing savings (e.g. "−171 504 kr"). Green row tinting for deal cars. Sort state lifted to DataTableSection; clicking "Fynd" header triggers server-side deal sort. Deal filter pill buttons above the table: "Alla" / "Alla fynd" / "Fyndpris" / "Bra pris" — filters via `?deal=any|great|good` API param.
+- **`/api/cars`**: Computes deal scores server-side using regression coefficients from `web_cache.aggregates.regressionModels` (same `predictPrice()` math as TcoCalculator). Each car gets `predicted`, `residual`, and `deal` fields. Supports `sort=deal` (sort by deal rank + residual) and `deal=great|good|any` (filter to only deals). Both params fetch ALL matching rows, compute deals, filter/sort globally, then paginate in memory. Regression models cached 5 min.
 
 Deal thresholds (matching Python pipeline):
 ```
@@ -133,7 +134,18 @@ great = residual < −1.5 × residual_se  (~7% of cars)
 good  = residual < −0.75 × residual_se (~23% of cars)
 ```
 
-### 6. Database migration (commit `ee2b804`)
+### 6. TCO calculator — separate page, single scenario
+
+**Problem**: TCO calculator was a dual-scenario (A/B) comparison embedded in the main page. Overly complex for most users — they just want to know the cost for one car.
+
+**Solution**: Moved to its own page (`/tco`) with a single scenario. Key change: mileage auto-populates from the **median mileage** of real scatter data for the selected model+year. E.g. picking RAV4 2022 sets mileage to 7 900 mil (median of 106 ads). Falls back to `age × 1500` if insufficient data.
+
+- **`/tco` page**: Fetches `/api/aggregates` (regression, tcoDefaults, modelConfig) and `/api/scatter` (for median mileage)
+- **TcoCalculator**: Single scenario, `useEffect` auto-updates mileage on model/year change. Shows "Median från N annonser" hint.
+- **Main page**: TCO section removed entirely. Nav link points to `/tco`.
+- **TcoSection.tsx**: Deleted (data fetching moved into /tco page).
+
+### 7. Database migration (commit `ee2b804`)
 
 - Moved from static JSON files to Neon Postgres via API routes
 - 5-minute cache with stale-while-revalidate for performance

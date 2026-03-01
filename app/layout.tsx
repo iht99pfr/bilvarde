@@ -40,7 +40,7 @@ export default function RootLayout({
               <a href="#mileage" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
                 Miltal
               </a>
-              <a href="#tco" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
+              <a href="/tco" className="hover:text-[var(--foreground)] transition whitespace-nowrap">
                 Ägandekostnad
               </a>
 <a href="#explorer" className="hover:text-[var(--foreground)] transition whitespace-nowrap">

@@ -3,7 +3,6 @@ import ModelSelector from "./components/ModelSelector";
 import HeroSection from "./components/HeroSection";
 import StatsSection from "./components/StatsSection";
 import ChartSection from "./components/ChartSection";
-import TcoSection from "./components/TcoSection";
 import DataTableSection from "./components/DataTableSection";
 
 export default function Home() {
@@ -24,18 +23,6 @@ export default function Home() {
 
         {/* Charts — shared legend filter state */}
         <ChartSection />
-
-        {/* TCO Calculator */}
-        <section id="tco" className="space-y-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-[var(--foreground)]">Ägandekostnadsberäknare</h2>
-            <p className="text-[var(--muted)] text-sm mt-1">
-              Jämför den totala ägandekostnaden för två olika bilar. Prediktioner
-              beräknas i realtid med vår regressionsmodell tränad på verkliga annonser.
-            </p>
-          </div>
-          <TcoSection />
-        </section>
 
         {/* Data Explorer */}
         <section id="explorer" className="space-y-4">
