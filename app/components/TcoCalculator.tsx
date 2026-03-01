@@ -31,11 +31,20 @@ interface ScatterPoint {
   fuel: string;
 }
 
+interface CurvePoint {
+  age: number;
+  predicted: number;
+  lower: number;
+  upper: number;
+  mileage: number;
+}
+
 interface Props {
   regression: Record<string, RegressionModel>;
   tcoDefaults: Record<string, TcoDefaults>;
   modelConfig: ModelConfigMap;
   scatter: Record<string, ScatterPoint[]>;
+  predictionCurves: Record<string, Record<string, CurvePoint[]>>;
 }
 
 interface ScenarioInputs {
@@ -70,50 +79,87 @@ const FUEL_LABELS: Record<string, string> = {
   Electric: "El",
 };
 
-function predictPrice(
-  reg: RegressionModel,
-  age: number,
-  mileage: number,
-  fuel: string,
-): { predicted: number; lower: number; upper: number } {
-  const features: Record<string, number> = {
-    car_age_years: age,
-    mileage_mil: mileage,
-    horsepower: reg.medianHp,
-    equipment_count: reg.medianEquipment,
-    is_hybrid: fuel === "Hybrid" ? 1 : 0,
-    is_phev: fuel === "PHEV" ? 1 : 0,
-    is_diesel: fuel === "Diesel" ? 1 : 0,
-    is_electric: fuel === "Electric" ? 1 : 0,
-    is_dealer: 0,
-    is_awd: reg.typicalAwd,
-  };
+/** Look up a prediction curve point by age, clamping predicted to >= 0 */
+function curveAt(curve: CurvePoint[], age: number): CurvePoint | null {
+  const point = curve.find((p) => p.age === age);
+  if (!point) return null;
+  return { ...point, predicted: Math.max(0, point.predicted) };
+}
 
-  let predicted = reg.intercept;
-  for (const [key, coef] of Object.entries(reg.coefficients)) {
-    predicted += coef * (features[key] || 0);
-  }
-
-  return {
-    predicted: Math.max(0, Math.round(predicted)),
-    lower: Math.max(0, Math.round(predicted - 1.96 * reg.residual_se)),
-    upper: Math.round(predicted + 1.96 * reg.residual_se),
-  };
+/** Get effective mileage coefficient including fuel interaction terms */
+function getEffectiveMileageCoeff(reg: RegressionModel, fuel: string): number {
+  let coeff = reg.coefficients.mileage_mil || 0;
+  if (fuel === "PHEV") coeff += reg.coefficients.mileage_x_phev || 0;
+  if (fuel === "Electric") coeff += reg.coefficients.mileage_x_electric || 0;
+  return coeff;
 }
 
 function computeTco(
   scenario: ScenarioInputs,
   reg: RegressionModel,
   tcoDefault: TcoDefaults,
+  curve: CurvePoint[] | undefined,
 ): PredictionResult | null {
   const currentAge = 2026 - scenario.year;
   const futureAge = currentAge + scenario.holdingYears;
-  const futureMileage = scenario.mileage + scenario.annualMileage * scenario.holdingYears;
 
-  const buy = predictPrice(reg, currentAge, scenario.mileage, scenario.fuel);
-  const sell = predictPrice(reg, futureAge, futureMileage, scenario.fuel);
+  let buyPrice: number;
+  let sellPrice: number;
 
-  const valueLoss = Math.max(0, buy.predicted - sell.predicted);
+  const buyPoint = curve && curveAt(curve, currentAge);
+  const sellPoint = curve && curveAt(curve, futureAge);
+
+  if (buyPoint && sellPoint) {
+    // Curve-based pricing — captures non-linear depreciation
+    // Adjust buy price for mileage deviation from typical at this age
+    const mileageCoeff = getEffectiveMileageCoeff(reg, scenario.fuel);
+    const buyMileageDelta = scenario.mileage - buyPoint.mileage;
+    buyPrice = Math.max(0, Math.round(buyPoint.predicted + mileageCoeff * buyMileageDelta));
+
+    // Sell price from curve (market value at that age)
+    sellPrice = Math.max(0, Math.round(sellPoint.predicted));
+  } else {
+    // Fallback: simple regression (linear, same loss regardless of year)
+    const mileageCoeff = getEffectiveMileageCoeff(reg, scenario.fuel);
+    const futureMileage = scenario.mileage + scenario.annualMileage * scenario.holdingYears;
+
+    let buyPred = reg.intercept;
+    let sellPred = reg.intercept;
+    for (const [key, coef] of Object.entries(reg.coefficients)) {
+      const buyFeatures: Record<string, number> = {
+        car_age_years: currentAge,
+        mileage_mil: scenario.mileage,
+        horsepower: reg.medianHp,
+        equipment_count: reg.medianEquipment,
+        is_hybrid: scenario.fuel === "Hybrid" ? 1 : 0,
+        is_phev: scenario.fuel === "PHEV" ? 1 : 0,
+        is_diesel: scenario.fuel === "Diesel" ? 1 : 0,
+        is_electric: scenario.fuel === "Electric" ? 1 : 0,
+        is_dealer: 0,
+        is_awd: reg.typicalAwd,
+        age_x_phev: scenario.fuel === "PHEV" ? currentAge : 0,
+        age_x_electric: scenario.fuel === "Electric" ? currentAge : 0,
+        mileage_x_phev: scenario.fuel === "PHEV" ? scenario.mileage : 0,
+        mileage_x_electric: scenario.fuel === "Electric" ? scenario.mileage : 0,
+      };
+      buyPred += coef * (buyFeatures[key] || 0);
+
+      const sellFeatures: Record<string, number> = {
+        ...buyFeatures,
+        car_age_years: futureAge,
+        mileage_mil: futureMileage,
+        age_x_phev: scenario.fuel === "PHEV" ? futureAge : 0,
+        age_x_electric: scenario.fuel === "Electric" ? futureAge : 0,
+        mileage_x_phev: scenario.fuel === "PHEV" ? futureMileage : 0,
+        mileage_x_electric: scenario.fuel === "Electric" ? futureMileage : 0,
+      };
+      sellPred += coef * (sellFeatures[key] || 0);
+    }
+    buyPrice = Math.max(0, Math.round(buyPred));
+    sellPrice = Math.max(0, Math.round(sellPred));
+  }
+
+  const valueLoss = Math.max(0, buyPrice - sellPrice);
   const months = scenario.holdingYears * 12;
   const totalMilesDriven = scenario.annualMileage * scenario.holdingYears;
 
@@ -125,8 +171,8 @@ function computeTco(
   const totalCost = valueLoss + fixedCosts;
 
   return {
-    buyPrice: buy.predicted,
-    sellPrice: sell.predicted,
+    buyPrice,
+    sellPrice,
     valueLoss,
     monthlyDepreciation: Math.round(valueLoss / months),
     annualDepreciation: Math.round(valueLoss / scenario.holdingYears),
@@ -147,7 +193,7 @@ function getMedianMileage(scatter: ScatterPoint[], year: number): number {
   return Math.round(sorted[Math.floor(sorted.length / 2)] / 100) * 100;
 }
 
-export default function TcoCalculator({ regression, tcoDefaults, modelConfig, scatter }: Props) {
+export default function TcoCalculator({ regression, tcoDefaults, modelConfig, scatter, predictionCurves }: Props) {
   const firstModel = Object.keys(regression)[0] || "RAV4";
   const firstFuel = getFuelOptions(modelConfig, firstModel)[0] || "Hybrid";
 
@@ -172,8 +218,14 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
   const result = useMemo(() => {
     const reg = regression[scenario.model];
     const tco = tcoDefaults[scenario.model];
-    return reg && tco ? computeTco(scenario, reg, tco) : null;
-  }, [scenario, regression, tcoDefaults]);
+    if (!reg || !tco) return null;
+
+    // Get fuel-specific curve, falling back to 'all'
+    const modelCurves = predictionCurves[scenario.model];
+    const curve = modelCurves?.[scenario.fuel] || modelCurves?.["all"];
+
+    return computeTco(scenario, reg, tco, curve);
+  }, [scenario, regression, tcoDefaults, predictionCurves]);
 
   const update = (partial: Partial<ScenarioInputs>) => {
     setScenario((prev) => ({ ...prev, ...partial }));

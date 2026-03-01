@@ -47,6 +47,7 @@ export default function TcoPage() {
           tcoDefaults={aggregates.tcoDefaults}
           modelConfig={aggregates.modelConfig || {}}
           scatter={scatter}
+          predictionCurves={aggregates.predictionCurves || {}}
         />
       )}
 
