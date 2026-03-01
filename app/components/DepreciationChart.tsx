@@ -246,6 +246,17 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
         </ScatterChart>
       </ResponsiveContainer>
 
+      <div className="flex justify-center gap-5 text-xs text-[var(--muted)]">
+        <span className="inline-flex items-center gap-1.5">
+          <svg width={12} height={12}><circle cx={6} cy={6} r={6} fill="#16a34a" /></svg>
+          Fyndpris
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <svg width={10} height={10}><circle cx={5} cy={5} r={5} fill="#4ade80" /></svg>
+          Bra pris
+        </span>
+      </div>
+
       {modelsWithCurve.length > 0 ? (
         <ResponsiveContainer width="100%" height={400}>
           <ComposedChart data={trendData} margin={{ top: 10, right: 20, bottom: 40, left: 20 }}>
@@ -283,17 +294,6 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           Otillräckligt med datapunkter för detta bränsle.
         </div>
       )}
-
-      <div className="flex justify-center gap-5 text-xs text-[var(--muted)]">
-        <span className="inline-flex items-center gap-1.5">
-          <svg width={12} height={12}><circle cx={6} cy={6} r={6} fill="#16a34a" /></svg>
-          Fyndpris
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <svg width={10} height={10}><circle cx={5} cy={5} r={5} fill="#4ade80" /></svg>
-          Bra pris
-        </span>
-      </div>
 
       {hasPredictions && visibleModelsWithCurve.length > 0 && (
         <p className="text-xs text-[var(--muted)] text-center">

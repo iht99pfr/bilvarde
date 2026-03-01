@@ -27,6 +27,7 @@ export default function DataTableSection() {
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>("price");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [dealFilter, setDealFilter] = useState<string>(""); // "", "any", "great", "good"
   const limit = 30;
 
   const handleSort = (key: SortKey) => {
@@ -48,13 +49,14 @@ export default function DataTableSection() {
     if (fuelKey) params.set("fuel", fuelKey);
     // Send deal sort to server (server-side sorting by residual)
     if (sortKey === "deal") params.set("sort", "deal");
+    if (dealFilter) params.set("deal", dealFilter);
     return params.toString();
-  }, [page, selectedModels, fuelFilter, sortKey]);
+  }, [page, selectedModels, fuelFilter, sortKey, dealFilter]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [selectedModels, fuelFilter]);
+  }, [selectedModels, fuelFilter, dealFilter]);
 
   useEffect(() => {
     setData(null);
@@ -73,8 +75,34 @@ export default function DataTableSection() {
     );
   }
 
+  const dealButtons: { key: string; label: string; color: string; activeColor: string }[] = [
+    { key: "", label: "Alla", color: "bg-[var(--card)] text-[var(--muted)]", activeColor: "bg-[var(--foreground)] text-white" },
+    { key: "any", label: "Alla fynd", color: "bg-[var(--card)] text-[var(--muted)]", activeColor: "bg-green-600 text-white" },
+    { key: "great", label: "Fyndpris", color: "bg-[var(--card)] text-[var(--muted)]", activeColor: "bg-green-700 text-white" },
+    { key: "good", label: "Bra pris", color: "bg-[var(--card)] text-[var(--muted)]", activeColor: "bg-green-500 text-white" },
+  ];
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {dealButtons.map((btn) => (
+          <button
+            key={btn.key}
+            onClick={() => {
+              setDealFilter(btn.key);
+              if (btn.key) {
+                setSortKey("deal");
+                setSortDir("asc");
+              }
+            }}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
+              dealFilter === btn.key ? btn.activeColor : btn.color
+            } border border-[var(--border)] hover:opacity-80`}
+          >
+            {btn.label}
+          </button>
+        ))}
+      </div>
       <DataTable cars={data.cars} total={data.total} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
 
       {/* Pagination */}

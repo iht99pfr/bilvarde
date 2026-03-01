@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
     const modelsParam = searchParams.get("models");
     const fuelParam = searchParams.get("fuel");
     const sortParam = searchParams.get("sort"); // "deal" for deal sorting
+    const dealFilter = searchParams.get("deal"); // "great", "good", or "any" (good+great)
 
     const sql = getDb();
 
@@ -88,12 +89,15 @@ export async function GET(req: NextRequest) {
     const regression = await getRegression(sql);
 
     const isDealSort = sortParam === "deal";
+    const hasDealFilter = dealFilter === "great" || dealFilter === "good" || dealFilter === "any";
+    // Need all rows when deal sorting or filtering (deal fields computed in JS, not SQL)
+    const needAllRows = isDealSort || hasDealFilter;
 
-    // When sorting by deal, fetch all rows so we can sort globally before paginating.
-    // For normal sort, use SQL pagination (LIMIT/OFFSET).
+    // When sorting/filtering by deal, fetch all rows so we can compute deals, filter, sort, then paginate.
+    // For normal queries, use SQL pagination (LIMIT/OFFSET).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rows: any[];
-    if (isDealSort) {
+    if (needAllRows) {
       rows = await sql`
         SELECT listing_id, url, make, model, model_key, model_year, price_sek, mileage_mil,
                fuel_type, horsepower, gearbox, drivetrain, color, seller_type,
@@ -134,7 +138,7 @@ export async function GET(req: NextRequest) {
       `;
     }
 
-    const total = isDealSort ? rows.length : Number(
+    const total = needAllRows ? rows.length : Number(
       (await sql`
         SELECT COUNT(*) as total FROM cars_enriched
         WHERE (exclusion_tags = '[]'::jsonb OR exclusion_tags IS NULL)
@@ -203,15 +207,32 @@ export async function GET(req: NextRequest) {
 
     let cars = rows.map(mapRow);
 
-    // For deal sort: sort globally, then paginate in memory
-    if (isDealSort) {
+    // Apply deal filter (computed in JS since deal is not a DB column)
+    if (hasDealFilter) {
+      if (dealFilter === "great") {
+        cars = cars.filter((c) => c.deal === "great");
+      } else if (dealFilter === "good") {
+        cars = cars.filter((c) => c.deal === "good");
+      } else {
+        // "any" = good + great
+        cars = cars.filter((c) => c.deal === "good" || c.deal === "great");
+      }
+    }
+
+    // For deal sort or deal filter: sort globally, then paginate in memory
+    if (needAllRows) {
       const dealRank = (d: string | null) => d === "great" ? 0 : d === "good" ? 1 : 2;
       cars.sort((a, b) => {
         const rankDiff = dealRank(a.deal) - dealRank(b.deal);
         if (rankDiff !== 0) return rankDiff;
         return (a.residual ?? 0) - (b.residual ?? 0);
       });
+      const filteredTotal = cars.length;
       cars = cars.slice(offset, offset + limit);
+      return NextResponse.json(
+        { cars, total: filteredTotal, page, pages: Math.ceil(filteredTotal / limit), limit },
+        { headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=120" } }
+      );
     }
 
     return NextResponse.json(
