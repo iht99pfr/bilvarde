@@ -43,15 +43,18 @@ export default function Home() {
             med priser under 20 000 kr eller årsmodeller före 2005 exkluderades.
           </p>
           <p>
-            Värdeminskning modelleras med multivariat linjär regression med 14
+            Värdeminskning modelleras med log-transformerad multivariat regression med 15
             variabler: bilålder, miltal, hästkrafter, utrustningsantal, bränsletyp
-            (Hybrid/PHEV/Diesel/El), säljartyp, drivlina samt interaktionstermer
-            mellan bränsletyp och ålder/miltal.
+            (Hybrid/PHEV/Diesel/El), säljartyp, drivlina, WLTP-räckvidd samt
+            interaktionstermer mellan bränsletyp och ålder/miltal. Log-transformen
+            ger en naturlig exponentiell avskrivningskurva där nya bilar tappar mer
+            i värde än äldre.
           </p>
           <p>
-            95% prediktionsintervall använder ±1,96 × residual standardfel. Ägandekostnadsberäknaren
-            använder samma regressionskoefficienter i klienten för att prediktera
-            köp/säljpriser för valfri konfiguration.
+            95% prediktionsintervall beräknas i log-rummet (±1,96 × SE) och
+            transformeras tillbaka, vilket ger proportionella konfidensband.
+            Ägandekostnadsberäknaren använder förberäknade prediktionskurvor
+            för att fånga den icke-linjära värdeminskningen vid olika åldrar.
           </p>
         </section>
       </div>

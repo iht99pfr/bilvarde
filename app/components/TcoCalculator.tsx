@@ -115,7 +115,12 @@ function computeTco(
     // Adjust buy price for mileage deviation from typical at this age
     const mileageCoeff = getEffectiveMileageCoeff(reg, scenario.fuel);
     const buyMileageDelta = scenario.mileage - buyPoint.mileage;
-    buyPrice = Math.max(0, Math.round(buyPoint.predicted + mileageCoeff * buyMileageDelta));
+    // Log-transform coefficients are in log-space, so adjustment is multiplicative
+    if (reg.log_transform) {
+      buyPrice = Math.max(0, Math.round(buyPoint.predicted * Math.exp(mileageCoeff * buyMileageDelta)));
+    } else {
+      buyPrice = Math.max(0, Math.round(buyPoint.predicted + mileageCoeff * buyMileageDelta));
+    }
 
     // Sell price from curve (market value at that age)
     sellPrice = Math.max(0, Math.round(sellPoint.predicted));
