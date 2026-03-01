@@ -25,6 +25,9 @@ interface ScatterPoint {
   fuel: string;
   hp: number;
   seller: string;
+  predicted?: number;
+  residual?: number;
+  deal?: "good" | "great";
 }
 
 interface MedianPoint {
@@ -50,6 +53,19 @@ interface Props {
   fuelFilter: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function DealDot(props: any) {
+  const { cx, cy, payload, fill } = props;
+  if (!cx || !cy) return null;
+  if (payload?.deal === "great") {
+    return <circle cx={cx} cy={cy} r={6} fill="#16a34a" stroke="#fff" strokeWidth={1.5} />;
+  }
+  if (payload?.deal === "good") {
+    return <circle cx={cx} cy={cy} r={5} fill="#4ade80" opacity={0.85} />;
+  }
+  return <circle cx={cx} cy={cy} r={4} fill={fill} opacity={0.6} />;
+}
+
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterPoint }> }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
@@ -59,6 +75,25 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
       <p className="font-mono font-semibold">{d.price.toLocaleString("sv-SE")} kr</p>
       <p className="text-[var(--muted)]">{d.mileage.toLocaleString("sv-SE")} mil · {d.hp} hk</p>
       <p className="text-[var(--muted)] text-xs">{d.seller === "dealer" ? "Handlare" : "Privat"}</p>
+      {d.predicted != null && (
+        <>
+          <hr className="my-1.5 border-[var(--border)]" />
+          <p className="text-xs text-[var(--muted)]">
+            Predikterat: <span className="font-mono">{d.predicted.toLocaleString("sv-SE")} kr</span>
+          </p>
+          {d.residual != null && d.residual < 0 && (
+            <p className="text-xs font-semibold text-green-600">
+              {Math.abs(d.residual).toLocaleString("sv-SE")} kr under predikterat
+            </p>
+          )}
+          {d.deal === "great" && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">Fyndpris</span>
+          )}
+          {d.deal === "good" && (
+            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600">Bra pris</span>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -114,10 +149,15 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
   const internalFuel = FUEL_MAP[fuelFilter] || fuelFilter;
 
   const filteredScatter: Record<string, ScatterPoint[]> = {};
+  const dealOrder = { undefined: 0, good: 1, great: 2 };
   for (const [model, points] of Object.entries(scatter)) {
-    filteredScatter[model] = internalFuel === "All"
+    const filtered = internalFuel === "All"
       ? points
       : points.filter((p) => p.fuel === internalFuel);
+    // Sort so deals render on top (SVG paint order)
+    filteredScatter[model] = [...filtered].sort(
+      (a, b) => (dealOrder[a.deal as keyof typeof dealOrder] ?? 0) - (dealOrder[b.deal as keyof typeof dealOrder] ?? 0)
+    );
   }
 
   const models = Object.keys(medians);
@@ -195,12 +235,13 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           <Legend verticalAlign="top" height={36} content={renderLegend(hiddenModels, onToggleModel)} />
           {Object.entries(filteredScatter).map(([model, points]) => (
             points.length > 0 && !hiddenModels.has(model) && (
-              <Scatter key={model} name={model} data={points} fill={COLORS[model]} opacity={0.6} r={4} />
+              <Scatter key={model} name={model} data={points} fill={COLORS[model]}
+                shape={<DealDot fill={COLORS[model]} />} />
             )
           ))}
           {/* Invisible scatters for hidden models so they still appear in the legend */}
           {Object.keys(filteredScatter).filter((m) => hiddenModels.has(m)).map((model) => (
-            <Scatter key={model} name={model} data={[]} fill={COLORS[model]} opacity={0.6} r={4} />
+            <Scatter key={model} name={model} data={[]} fill={COLORS[model]} r={4} />
           ))}
         </ScatterChart>
       </ResponsiveContainer>
@@ -242,6 +283,17 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           Otillräckligt med datapunkter för detta bränsle.
         </div>
       )}
+
+      <div className="flex justify-center gap-5 text-xs text-[var(--muted)]">
+        <span className="inline-flex items-center gap-1.5">
+          <svg width={12} height={12}><circle cx={6} cy={6} r={6} fill="#16a34a" /></svg>
+          Fyndpris
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <svg width={10} height={10}><circle cx={5} cy={5} r={5} fill="#4ade80" /></svg>
+          Bra pris
+        </span>
+      </div>
 
       {hasPredictions && visibleModelsWithCurve.length > 0 && (
         <p className="text-xs text-[var(--muted)] text-center">

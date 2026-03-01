@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useModelSelection } from "./ModelSelectionContext";
 import DataTable from "./DataTable";
+import type { SortKey } from "./DataTable";
 
 const FUEL_KEY_MAP: Record<string, string> = {
   Bensin: "Petrol",
@@ -24,7 +25,18 @@ export default function DataTableSection() {
   const { selectedModels, fuelFilter } = useModelSelection();
   const [data, setData] = useState<CarsResponse | null>(null);
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("price");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const limit = 30;
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir(key === "deal" ? "asc" : "asc");
+    }
+  };
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -34,8 +46,10 @@ export default function DataTableSection() {
     if (models) params.set("models", models);
     const fuelKey = FUEL_KEY_MAP[fuelFilter];
     if (fuelKey) params.set("fuel", fuelKey);
+    // Send deal sort to server (server-side sorting by residual)
+    if (sortKey === "deal") params.set("sort", "deal");
     return params.toString();
-  }, [page, selectedModels, fuelFilter]);
+  }, [page, selectedModels, fuelFilter, sortKey]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -61,7 +75,7 @@ export default function DataTableSection() {
 
   return (
     <div className="space-y-4">
-      <DataTable cars={data.cars} total={data.total} />
+      <DataTable cars={data.cars} total={data.total} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
 
       {/* Pagination */}
       {data.pages > 1 && (

@@ -34,18 +34,18 @@ app/
 ├── api/
 │   ├── aggregates/route.ts   — serves pre-computed aggregates from Neon
 │   ├── scatter/route.ts      — serves raw scatter data from Neon
-│   └── cars/route.ts         — serves car listings for the data table
+│   └── cars/route.ts         — serves car listings + deal scores for the data table
 ├── components/
 │   ├── ChartSection.tsx       — orchestrates all charts, owns fuel filter state
-│   ├── DepreciationChart.tsx  — scatter plot + prediction curves (age vs price)
+│   ├── DepreciationChart.tsx  — scatter plot + prediction curves + deal dots (age vs price)
 │   ├── RetentionChart.tsx     — retention % chart (% of new price kept)
 │   ├── MileageChart.tsx       — mileage vs price scatter + trend line
 │   ├── ModelSelector.tsx      — pill-based model toggle (persisted to localStorage)
 │   ├── ModelSelectionContext.tsx — React context for selected models
 │   ├── TcoCalculator.tsx      — ownership cost calculator (uses regression coefficients)
 │   ├── TcoSection.tsx         — TCO section wrapper
-│   ├── DataTable.tsx          — sortable/filterable car listings table
-│   ├── DataTableSection.tsx   — data table section wrapper
+│   ├── DataTable.tsx          — sortable/filterable car listings table with deal badges
+│   ├── DataTableSection.tsx   — data table section wrapper, manages sort state
 │   ├── HeroSection.tsx        — hero with dynamic text based on selected models
 │   ├── StatsSection.tsx       — per-model stat cards
 │   ├── StatsCards.tsx         — individual stat card component
@@ -70,7 +70,10 @@ The Python pipeline writes two keys to `web_cache`:
 - `modelConfig` — `Record<string, {label, color, borderClass, fuelOptions}>`
 
 ### `scatter` (per model)
-- `scatter[model]` — `[{age, mileage, price, year, fuel, hp, seller}]`. **Has** fuel field — used for client-side fuel filtering of mileage chart.
+- `scatter[model]` — `[{age, mileage, price, year, fuel, hp, seller, predicted, residual, deal}]`. **Has** fuel field — used for client-side fuel filtering of mileage chart. Deal fields added by statistics pipeline: `predicted` (regression estimate), `residual` (actual − predicted), `deal` (`'good'` | `'great'` | `null`).
+
+### `aggregates.regressionModels` (per model)
+- `regressionModels[model]` — `{intercept, coefficients, residual_se, medianHp, medianEquipment, typicalAwd}`. Used by TcoCalculator (client-side) and `/api/cars` (server-side deal scoring).
 
 ## Key improvements made
 
@@ -114,7 +117,23 @@ Fuel key mapping (Swedish UI → backend keys):
 - Per-model fuel option detection
 - Interaction terms in regression (fuel × age, fuel × mileage)
 
-### 5. Database migration (commit `ee2b804`)
+### 5. Deal scoring — scatter + table integration
+
+**Problem**: The statistics pipeline added deal scoring fields (`predicted`, `residual`, `deal`) to scatter data in `web_cache`, but users had no way to discover or filter deals.
+
+**Solution**: Two-part integration:
+
+- **DepreciationChart**: Scatter dots are color-coded — dark green (white ring) = "Fyndpris" (great deal, >1.5 SE below predicted, ~7% of cars), lighter green = "Bra pris" (good deal, >0.75 SE, ~23%). Tooltip shows predicted price and savings. Deal dots render on top via SVG paint order. Legend added below chart.
+- **DataTable + DataTableSection**: New "Fynd" column with green badges showing savings (e.g. "−171 504 kr"). Green row tinting for deal cars. Sort state lifted to DataTableSection; clicking "Fynd" header triggers server-side deal sort.
+- **`/api/cars`**: Computes deal scores server-side using regression coefficients from `web_cache.aggregates.regressionModels` (same `predictPrice()` math as TcoCalculator). Each car gets `predicted`, `residual`, and `deal` fields. When `sort=deal`, fetches ALL matching rows, computes deals globally, sorts by deal rank + residual, then paginates in memory. Regression models cached 5 min.
+
+Deal thresholds (matching Python pipeline):
+```
+great = residual < −1.5 × residual_se  (~7% of cars)
+good  = residual < −0.75 × residual_se (~23% of cars)
+```
+
+### 6. Database migration (commit `ee2b804`)
 
 - Moved from static JSON files to Neon Postgres via API routes
 - 5-minute cache with stale-while-revalidate for performance

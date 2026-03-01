@@ -18,14 +18,20 @@ interface Car {
   color: string;
   drivetrain: string;
   equipmentCount: number;
+  predicted: number | null;
+  residual: number | null;
+  deal: string | null;
 }
 
 interface Props {
   cars: Car[];
   total: number;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onSort: (key: SortKey) => void;
 }
 
-type SortKey = "price" | "year" | "mileage" | "hp";
+export type SortKey = "price" | "year" | "mileage" | "hp" | "deal";
 
 const FUEL_LABELS: Record<string, string> = {
   Hybrid: "Hybrid",
@@ -35,27 +41,17 @@ const FUEL_LABELS: Record<string, string> = {
   Electric: "El",
 };
 
-export default function DataTable({ cars, total }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>("price");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
+export default function DataTable({ cars, total, sortKey, sortDir, onSort }: Props) {
   const sorted = useMemo(() => {
     const result = [...cars];
+    // "deal" sorting is done server-side, skip client sort for it
+    if (sortKey === "deal") return result;
     result.sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
       return (a[sortKey] - b[sortKey]) * mul;
     });
     return result;
   }, [cars, sortKey, sortDir]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  };
 
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <span className="text-[var(--muted)] ml-1">↕</span>;
@@ -76,31 +72,36 @@ export default function DataTable({ cars, total }: Props) {
               <th className="px-3 py-2 text-left">Märke / Modell</th>
               <th
                 className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
-                onClick={() => toggleSort("year")}
+                onClick={() => onSort("year")}
               >
                 Årsmodell <SortIcon col="year" />
               </th>
               <th
                 className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
-                onClick={() => toggleSort("price")}
+                onClick={() => onSort("price")}
               >
                 Pris <SortIcon col="price" />
               </th>
               <th
                 className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
-                onClick={() => toggleSort("mileage")}
+                onClick={() => onSort("deal")}
+              >
+                Fynd <SortIcon col="deal" />
+              </th>
+              <th
+                className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
+                onClick={() => onSort("mileage")}
               >
                 Miltal <SortIcon col="mileage" />
               </th>
               <th className="px-3 py-2 text-left">Bränsle</th>
               <th
                 className="px-3 py-2 text-right cursor-pointer hover:text-[var(--foreground)]"
-                onClick={() => toggleSort("hp")}
+                onClick={() => onSort("hp")}
               >
                 HK <SortIcon col="hp" />
               </th>
-              <th className="px-3 py-2 text-left">Drivlina</th>
-              <th className="px-3 py-2 text-left">Säljare</th>
+              <th className="px-3 py-2 text-left hidden sm:table-cell">Säljare</th>
               <th className="px-3 py-2 text-center">Länk</th>
             </tr>
           </thead>
@@ -108,7 +109,9 @@ export default function DataTable({ cars, total }: Props) {
             {sorted.map((car) => (
               <tr
                 key={car.id}
-                className="border-t border-[var(--border)] hover:bg-[var(--card)]/50 transition"
+                className={`border-t border-[var(--border)] hover:bg-[var(--card)]/50 transition ${
+                  car.deal === "great" ? "bg-green-50/60" : car.deal === "good" ? "bg-green-50/30" : ""
+                }`}
               >
                 <td className="px-3 py-2 font-medium text-[var(--foreground)]">
                   {car.make} {car.model}
@@ -116,6 +119,18 @@ export default function DataTable({ cars, total }: Props) {
                 <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">{car.year}</td>
                 <td className="px-3 py-2 text-right font-mono font-semibold text-[var(--foreground)]">
                   {car.price.toLocaleString("sv-SE")} kr
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {car.deal === "great" && (
+                    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold whitespace-nowrap">
+                      −{Math.abs(car.residual!).toLocaleString("sv-SE")} kr
+                    </span>
+                  )}
+                  {car.deal === "good" && (
+                    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600 whitespace-nowrap">
+                      −{Math.abs(car.residual!).toLocaleString("sv-SE")} kr
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">
                   {car.mileage.toLocaleString("sv-SE")} mil
@@ -138,10 +153,7 @@ export default function DataTable({ cars, total }: Props) {
                   </span>
                 </td>
                 <td className="px-3 py-2 text-right font-mono text-[var(--foreground)]">{car.hp}</td>
-                <td className="px-3 py-2 text-xs text-[var(--muted)]">
-                  {car.drivetrain}
-                </td>
-                <td className="px-3 py-2 text-xs text-[var(--muted)]">
+                <td className="px-3 py-2 text-xs text-[var(--muted)] hidden sm:table-cell">
                   {car.seller === "dealer" ? "Handlare" : "Privat"}
                 </td>
                 <td className="px-3 py-2 text-center">
