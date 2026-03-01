@@ -151,9 +151,10 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
   const filteredScatter: Record<string, ScatterPoint[]> = {};
   const dealOrder = { undefined: 0, good: 1, great: 2 };
   for (const [model, points] of Object.entries(scatter)) {
-    const filtered = internalFuel === "All"
+    const fuelFiltered = internalFuel === "All"
       ? points
       : points.filter((p) => p.fuel === internalFuel);
+    const filtered = fuelFiltered.filter((p) => p.age <= 15);
     // Sort so deals render on top (SVG paint order)
     filteredScatter[model] = [...filtered].sort(
       (a, b) => (dealOrder[a.deal as keyof typeof dealOrder] ?? 0) - (dealOrder[b.deal as keyof typeof dealOrder] ?? 0)
@@ -226,7 +227,7 @@ export default function DepreciationChart({ scatter, medians, predictionCurves, 
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="age" type="number" name="Age"
             label={{ value: "Bilens ålder (år)", position: "bottom", fill: "var(--muted)", offset: 15 }}
-            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, 15]} allowDataOverflow />
+            tick={{ fill: "var(--muted)", fontSize: 12 }} domain={[0, 15]} />
           <YAxis dataKey="price" type="number" name="Price"
             label={{ value: "Pris (kr)", angle: -90, position: "insideLeft", fill: "var(--muted)", offset: 10 }}
             tick={{ fill: "var(--muted)", fontSize: 12 }}
