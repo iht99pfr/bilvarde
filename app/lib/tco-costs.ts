@@ -155,6 +155,153 @@ const COST_PROFILES: Record<string, ModelCostProfile> = {
 const EV_SERVICE_FACTOR = 0.6;
 const EV_ONLY_MODELS = new Set(["ModelY", "XC40Recharge"]);
 
+// ── Fuel / electricity consumption ──────────────────────────────────
+// Real-world consumption estimates (not WLTP).
+// For PHEVs: fuelL100km is consumption when running on fuel only,
+// elKWh100km is consumption when running on electricity.
+// electricShare = fraction of km driven on electricity (0.5 = 50%).
+
+interface FuelProfile {
+  fuelL100km?: number;    // liters per 100 km (fuel engine running)
+  elKWh100km?: number;    // kWh per 100 km (electric motor running)
+  electricShare: number;  // 0 = pure ICE, 1 = pure EV, 0-1 = PHEV
+  fuelType: "petrol" | "diesel";
+}
+
+// Swedish fuel prices (SEK), representative 2025-2026 averages
+export const FUEL_PRICES = {
+  petrol: 18.50,      // SEK/liter (E10)
+  diesel: 19.50,      // SEK/liter (B7/HVO)
+  electricity: 2.00,  // SEK/kWh (home charging incl. grid + tax)
+};
+
+// PHEV default: 50% electric driving — typical for Swedish commuters
+// who charge at home but also do longer trips on weekends
+const PHEV_ELECTRIC_SHARE = 0.50;
+
+const FUEL_PROFILES: Record<string, Record<string, FuelProfile>> = {
+  RAV4: {
+    Hybrid:  { fuelL100km: 5.5, electricShare: 0, fuelType: "petrol" },
+    Petrol:  { fuelL100km: 8.0, electricShare: 0, fuelType: "petrol" },
+  },
+  XC60: {
+    PHEV:    { fuelL100km: 8.5, elKWh100km: 22, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Hybrid:  { fuelL100km: 7.5, electricShare: 0, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 7.0, electricShare: 0, fuelType: "diesel" },
+    Petrol:  { fuelL100km: 9.0, electricShare: 0, fuelType: "petrol" },
+  },
+  X3M: {
+    Petrol:  { fuelL100km: 11.0, electricShare: 0, fuelType: "petrol" },
+  },
+  X3: {
+    PHEV:    { fuelL100km: 8.5, elKWh100km: 20, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 7.0, electricShare: 0, fuelType: "diesel" },
+    Petrol:  { fuelL100km: 9.0, electricShare: 0, fuelType: "petrol" },
+  },
+  XC40Recharge: {
+    Electric: { elKWh100km: 22, electricShare: 1, fuelType: "petrol" },
+  },
+  XC40: {
+    PHEV:    { fuelL100km: 7.5, elKWh100km: 18, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Hybrid:  { fuelL100km: 7.0, electricShare: 0, fuelType: "petrol" },
+    Petrol:  { fuelL100km: 7.5, electricShare: 0, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 6.5, electricShare: 0, fuelType: "diesel" },
+  },
+  Tiguan: {
+    PHEV:    { fuelL100km: 7.5, elKWh100km: 18, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 6.5, electricShare: 0, fuelType: "diesel" },
+    Petrol:  { fuelL100km: 8.0, electricShare: 0, fuelType: "petrol" },
+  },
+  ModelY: {
+    Electric: { elKWh100km: 17, electricShare: 1, fuelType: "petrol" },
+  },
+  Niro: {
+    Hybrid:  { fuelL100km: 4.5, electricShare: 0, fuelType: "petrol" },
+    PHEV:    { fuelL100km: 5.5, elKWh100km: 15, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Electric: { elKWh100km: 16, electricShare: 1, fuelType: "petrol" },
+  },
+  GLC: {
+    PHEV:    { fuelL100km: 9.0, elKWh100km: 22, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 7.0, electricShare: 0, fuelType: "diesel" },
+    Petrol:  { fuelL100km: 9.5, electricShare: 0, fuelType: "petrol" },
+  },
+  GolfGTI: {
+    Petrol:  { fuelL100km: 7.5, electricShare: 0, fuelType: "petrol" },
+  },
+  GolfR: {
+    Petrol:  { fuelL100km: 9.0, electricShare: 0, fuelType: "petrol" },
+  },
+  Golf: {
+    PHEV:    { fuelL100km: 6.0, elKWh100km: 16, electricShare: PHEV_ELECTRIC_SHARE, fuelType: "petrol" },
+    Hybrid:  { fuelL100km: 5.5, electricShare: 0, fuelType: "petrol" },
+    Petrol:  { fuelL100km: 6.5, electricShare: 0, fuelType: "petrol" },
+    Diesel:  { fuelL100km: 5.0, electricShare: 0, fuelType: "diesel" },
+    Electric: { elKWh100km: 17, electricShare: 1, fuelType: "petrol" },
+  },
+};
+
+export interface FuelCostResult {
+  total: number;       // total fuel cost for the holding period
+  label: string;       // display label, e.g. "el", "bensin", "50% el / 50% bensin"
+  perYear: number;     // annual fuel cost
+}
+
+/**
+ * Compute fuel/electricity cost for the holding period.
+ * annualMileageMil is in Swedish mil (1 mil = 10 km).
+ */
+export function computeFuelCost(
+  modelKey: string,
+  fuel: string,
+  annualMileageMil: number,
+  holdingYears: number,
+): FuelCostResult {
+  const modelProfiles = FUEL_PROFILES[modelKey];
+  const profile = modelProfiles?.[fuel];
+  if (!profile) {
+    // Fallback: assume 7 l/100km petrol
+    const annualKm = annualMileageMil * 10;
+    const perYear = Math.round((7 / 100) * annualKm * FUEL_PRICES.petrol);
+    return { total: perYear * holdingYears, label: "bensin", perYear };
+  }
+
+  const annualKm = annualMileageMil * 10;
+  const elShare = profile.electricShare;
+  const fuelShare = 1 - elShare;
+
+  let fuelCostPerYear = 0;
+  let elCostPerYear = 0;
+
+  if (fuelShare > 0 && profile.fuelL100km) {
+    const fuelKm = annualKm * fuelShare;
+    const liters = (profile.fuelL100km / 100) * fuelKm;
+    fuelCostPerYear = liters * FUEL_PRICES[profile.fuelType];
+  }
+
+  if (elShare > 0 && profile.elKWh100km) {
+    const elKm = annualKm * elShare;
+    const kWh = (profile.elKWh100km / 100) * elKm;
+    elCostPerYear = kWh * FUEL_PRICES.electricity;
+  }
+
+  const perYear = Math.round(fuelCostPerYear + elCostPerYear);
+  const total = perYear * holdingYears;
+
+  // Build display label
+  let label: string;
+  const fuelLabel = profile.fuelType === "diesel" ? "diesel" : "bensin";
+  if (elShare >= 1) {
+    label = "el";
+  } else if (elShare > 0) {
+    const elPct = Math.round(elShare * 100);
+    label = `${elPct}% el / ${100 - elPct}% ${fuelLabel}`;
+  } else {
+    label = fuelLabel;
+  }
+
+  return { total, label, perYear };
+}
+
 /**
  * Compute total ownership costs for a holding period, summing year by year.
  * Returns totals for service, repair, insurance, and tax.

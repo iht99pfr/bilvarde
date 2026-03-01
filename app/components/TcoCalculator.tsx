@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { getFuelOptions } from "@/app/lib/model-config";
 import type { ModelConfigMap } from "@/app/lib/model-config";
-import { computeOwnershipCosts } from "@/app/lib/tco-costs";
+import { computeOwnershipCosts, computeFuelCost, FUEL_PRICES } from "@/app/lib/tco-costs";
+import type { FuelCostResult } from "@/app/lib/tco-costs";
 
 interface RegressionModel {
   intercept: number;
@@ -66,6 +67,7 @@ interface PredictionResult {
   serviceTotal: number;
   repairTotal: number;
   taxTotal: number;
+  fuelCost: FuelCostResult;
 }
 
 const FUEL_LABELS: Record<string, string> = {
@@ -173,7 +175,8 @@ function computeTco(
   const serviceTotal = costs.service;
   const repairTotal = costs.repair;
   const taxTotal = costs.tax;
-  const fixedCosts = insuranceTotal + serviceTotal + repairTotal + taxTotal;
+  const fuelCost = computeFuelCost(scenario.model, scenario.fuel, scenario.annualMileage, scenario.holdingYears);
+  const fixedCosts = insuranceTotal + serviceTotal + repairTotal + taxTotal + fuelCost.total;
 
   const totalCost = valueLoss + fixedCosts;
 
@@ -191,6 +194,7 @@ function computeTco(
     serviceTotal,
     repairTotal,
     taxTotal,
+    fuelCost,
   };
 }
 
@@ -369,6 +373,13 @@ export default function TcoCalculator({ regression, modelConfig, scatter, predic
                 <span>Fordonsskatt</span>
                 <span className="font-mono text-[var(--foreground)]">{result.taxTotal.toLocaleString("sv-SE")} kr</span>
               </div>
+              <div className="flex justify-between">
+                <span>Drivmedel ({result.fuelCost.label})</span>
+                <span className="font-mono text-[var(--foreground)]">{result.fuelCost.total.toLocaleString("sv-SE")} kr</span>
+              </div>
+              <p className="text-[10px] text-[var(--muted)] pt-0.5">
+                Bensin {FUEL_PRICES.petrol} kr/l, diesel {FUEL_PRICES.diesel} kr/l, el {FUEL_PRICES.electricity} kr/kWh
+              </p>
             </div>
 
             <div className="bg-white/60 p-3 space-y-1">
