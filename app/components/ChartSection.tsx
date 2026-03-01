@@ -176,9 +176,9 @@ export default function ChartSection() {
                     />
                     <span className="text-[var(--muted)]">{label}</span>
                     <span className="font-mono font-semibold text-[var(--foreground)]">
-                      −{pctPer1000.toFixed(1)}%
+                      −{pctPer1000.toFixed(2)}%
                     </span>
-                    <span className="text-[var(--muted)] text-xs">per 1 000 mil</span>
+                    <span className="text-[var(--muted)] text-xs">av aktuellt värde per 1 000 mil</span>
                   </div>
                 );
               })}
