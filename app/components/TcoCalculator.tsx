@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { getFuelOptions } from "@/app/lib/model-config";
 import type { ModelConfigMap } from "@/app/lib/model-config";
+import { computeOwnershipCosts } from "@/app/lib/tco-costs";
 
 interface RegressionModel {
   intercept: number;
@@ -16,12 +17,6 @@ interface RegressionModel {
   medianHp: number;
   medianEquipment: number;
   typicalAwd: number;
-}
-
-interface TcoDefaults {
-  insurancePerYear: number;
-  servicePerYear: number;
-  taxPerYear: number;
 }
 
 interface ScatterPoint {
@@ -42,7 +37,7 @@ interface CurvePoint {
 
 interface Props {
   regression: Record<string, RegressionModel>;
-  tcoDefaults: Record<string, TcoDefaults>;
+  tcoDefaults?: Record<string, unknown>; // legacy, no longer used
   modelConfig: ModelConfigMap;
   scatter: Record<string, ScatterPoint[]>;
   predictionCurves: Record<string, Record<string, CurvePoint[]>>;
@@ -69,6 +64,7 @@ interface PredictionResult {
   monthlyTotal: number;
   insuranceTotal: number;
   serviceTotal: number;
+  repairTotal: number;
   taxTotal: number;
 }
 
@@ -98,7 +94,6 @@ function getEffectiveMileageCoeff(reg: RegressionModel, fuel: string): number {
 function computeTco(
   scenario: ScenarioInputs,
   reg: RegressionModel,
-  tcoDefault: TcoDefaults,
   curve: CurvePoint[] | undefined,
 ): PredictionResult | null {
   const currentAge = 2026 - scenario.year;
@@ -173,10 +168,12 @@ function computeTco(
   const months = scenario.holdingYears * 12;
   const totalMilesDriven = scenario.annualMileage * scenario.holdingYears;
 
-  const insuranceTotal = tcoDefault.insurancePerYear * scenario.holdingYears;
-  const serviceTotal = tcoDefault.servicePerYear * scenario.holdingYears;
-  const taxTotal = tcoDefault.taxPerYear * scenario.holdingYears;
-  const fixedCosts = insuranceTotal + serviceTotal + taxTotal;
+  const costs = computeOwnershipCosts(scenario.model, scenario.fuel, currentAge, scenario.holdingYears);
+  const insuranceTotal = costs.insurance;
+  const serviceTotal = costs.service;
+  const repairTotal = costs.repair;
+  const taxTotal = costs.tax;
+  const fixedCosts = insuranceTotal + serviceTotal + repairTotal + taxTotal;
 
   const totalCost = valueLoss + fixedCosts;
 
@@ -192,6 +189,7 @@ function computeTco(
     monthlyTotal: Math.round(totalCost / months),
     insuranceTotal,
     serviceTotal,
+    repairTotal,
     taxTotal,
   };
 }
@@ -203,7 +201,7 @@ function getMedianMileage(scatter: ScatterPoint[], year: number): number {
   return Math.round(sorted[Math.floor(sorted.length / 2)] / 100) * 100;
 }
 
-export default function TcoCalculator({ regression, tcoDefaults, modelConfig, scatter, predictionCurves }: Props) {
+export default function TcoCalculator({ regression, modelConfig, scatter, predictionCurves }: Props) {
   const firstModel = Object.keys(regression)[0] || "RAV4";
   const firstFuel = getFuelOptions(modelConfig, firstModel)[0] || "Hybrid";
 
@@ -227,15 +225,14 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
 
   const result = useMemo(() => {
     const reg = regression[scenario.model];
-    const tco = tcoDefaults[scenario.model];
-    if (!reg || !tco) return null;
+    if (!reg) return null;
 
     // Get fuel-specific curve, falling back to 'all'
     const modelCurves = predictionCurves[scenario.model];
     const curve = modelCurves?.[scenario.fuel] || modelCurves?.["all"];
 
-    return computeTco(scenario, reg, tco, curve);
-  }, [scenario, regression, tcoDefaults, predictionCurves]);
+    return computeTco(scenario, reg, curve);
+  }, [scenario, regression, predictionCurves]);
 
   const update = (partial: Partial<ScenarioInputs>) => {
     setScenario((prev) => ({ ...prev, ...partial }));
@@ -361,8 +358,12 @@ export default function TcoCalculator({ regression, tcoDefaults, modelConfig, sc
                 <span className="font-mono text-[var(--foreground)]">{result.insuranceTotal.toLocaleString("sv-SE")} kr</span>
               </div>
               <div className="flex justify-between">
-                <span>Service &amp; underhåll</span>
+                <span>Service</span>
                 <span className="font-mono text-[var(--foreground)]">{result.serviceTotal.toLocaleString("sv-SE")} kr</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Reparation &amp; underhåll</span>
+                <span className="font-mono text-[var(--foreground)]">{result.repairTotal.toLocaleString("sv-SE")} kr</span>
               </div>
               <div className="flex justify-between">
                 <span>Fordonsskatt</span>

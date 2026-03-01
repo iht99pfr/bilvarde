@@ -60,7 +60,9 @@ export default function TcoPage() {
           för vald modell och årsmodell.
         </p>
         <p>
-          Fasta kostnader (försäkring, service, skatt) är schabloner per modell.
+          Driftskostnader (försäkring, service, reparation, skatt) varierar med
+          bilens ålder och modell. Service är normalt inkluderat de första 3 åren,
+          och reparationskostnader ökar med bilens ålder — mer för premiumbilar.
           95% konfidensintervall beräknas från regressionens residualfel.
         </p>
       </div>
