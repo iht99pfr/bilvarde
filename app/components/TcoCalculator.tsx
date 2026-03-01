@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { getFuelOptions } from "@/app/lib/model-config";
 import type { ModelConfigMap } from "@/app/lib/model-config";
-import { computeOwnershipCosts, computeFuelCost, FUEL_PRICES } from "@/app/lib/tco-costs";
+import { computeOwnershipCosts, computeFuelCost, isPhev, FUEL_PRICES } from "@/app/lib/tco-costs";
 import type { FuelCostResult } from "@/app/lib/tco-costs";
 
 interface RegressionModel {
@@ -97,6 +97,7 @@ function computeTco(
   scenario: ScenarioInputs,
   reg: RegressionModel,
   curve: CurvePoint[] | undefined,
+  electricShare?: number,
 ): PredictionResult | null {
   const currentAge = 2026 - scenario.year;
   const futureAge = currentAge + scenario.holdingYears;
@@ -175,7 +176,7 @@ function computeTco(
   const serviceTotal = costs.service;
   const repairTotal = costs.repair;
   const taxTotal = costs.tax;
-  const fuelCost = computeFuelCost(scenario.model, scenario.fuel, scenario.annualMileage, scenario.holdingYears);
+  const fuelCost = computeFuelCost(scenario.model, scenario.fuel, scenario.annualMileage, scenario.holdingYears, electricShare);
   const fixedCosts = insuranceTotal + serviceTotal + repairTotal + taxTotal + fuelCost.total;
 
   const totalCost = valueLoss + fixedCosts;
@@ -218,6 +219,10 @@ export default function TcoCalculator({ regression, modelConfig, scatter, predic
     annualMileage: 1500,
   });
 
+  // PHEV electric share slider (0-100, displayed as percentage)
+  const [electricPct, setElectricPct] = useState(50);
+  const showElSlider = isPhev(scenario.model, scenario.fuel);
+
   // Auto-populate mileage when model or year changes
   useEffect(() => {
     const points = scatter[scenario.model];
@@ -235,8 +240,8 @@ export default function TcoCalculator({ regression, modelConfig, scatter, predic
     const modelCurves = predictionCurves[scenario.model];
     const curve = modelCurves?.[scenario.fuel] || modelCurves?.["all"];
 
-    return computeTco(scenario, reg, curve);
-  }, [scenario, regression, predictionCurves]);
+    return computeTco(scenario, reg, curve, showElSlider ? electricPct / 100 : undefined);
+  }, [scenario, regression, predictionCurves, electricPct, showElSlider]);
 
   const update = (partial: Partial<ScenarioInputs>) => {
     setScenario((prev) => ({ ...prev, ...partial }));
@@ -338,6 +343,27 @@ export default function TcoCalculator({ regression, modelConfig, scatter, predic
             />
           </div>
         </div>
+
+        {showElSlider && (
+          <div className="pt-1">
+            <label className="text-xs text-[var(--muted)] block mb-1">
+              Andel eldrift — {electricPct}% el / {100 - electricPct}% bensin
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={electricPct}
+              onChange={(e) => setElectricPct(Number(e.target.value))}
+              className="w-full accent-[var(--foreground)]"
+            />
+            <div className="flex justify-between text-[10px] text-[var(--muted)]">
+              <span>100% bensin</span>
+              <span>100% el</span>
+            </div>
+          </div>
+        )}
 
         {result && (
           <div className="pt-3 border-t border-[var(--border)] space-y-3">

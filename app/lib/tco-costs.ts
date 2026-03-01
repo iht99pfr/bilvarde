@@ -246,15 +246,23 @@ export interface FuelCostResult {
   perYear: number;     // annual fuel cost
 }
 
+/** Check if a model+fuel combination is a PHEV (has adjustable electric share). */
+export function isPhev(modelKey: string, fuel: string): boolean {
+  const profile = FUEL_PROFILES[modelKey]?.[fuel];
+  return !!profile && profile.electricShare > 0 && profile.electricShare < 1;
+}
+
 /**
  * Compute fuel/electricity cost for the holding period.
  * annualMileageMil is in Swedish mil (1 mil = 10 km).
+ * electricShareOverride: for PHEVs, override the default 50% split (0-1).
  */
 export function computeFuelCost(
   modelKey: string,
   fuel: string,
   annualMileageMil: number,
   holdingYears: number,
+  electricShareOverride?: number,
 ): FuelCostResult {
   const modelProfiles = FUEL_PROFILES[modelKey];
   const profile = modelProfiles?.[fuel];
@@ -266,7 +274,7 @@ export function computeFuelCost(
   }
 
   const annualKm = annualMileageMil * 10;
-  const elShare = profile.electricShare;
+  const elShare = electricShareOverride ?? profile.electricShare;
   const fuelShare = 1 - elShare;
 
   let fuelCostPerYear = 0;
